@@ -1,0 +1,52 @@
+/*
+ * build.gradle for cordova-plugin-car-connect (Android module)
+ * ------------------------------------------------------------
+ * • Compiles the Java sources under src/android/io/s2a/connect
+ * • Pulls in Jetpack Car-App and other AndroidX libs
+ * • Uses Java 11 tool-chain by default (change if you need 17)
+ * ------------------------------------------------------------
+ */
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'io.s2a.connect'
+
+    compileSdkVersion 34             // ↞ align with your Cordova project’s SDK
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    // Disable unit-tests & instrumentation (plugin has none)
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile(
+                    'proguard-android-optimize.txt'),
+                    'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    // Jetpack Car-App 1.3 brings ListTemplate, PaneTemplate, etc.
+    implementation 'androidx.car.app:app:1.4.0'
+
+    // Core AndroidX helpers used by the plugin
+    implementation 'androidx.core:core:1.16.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+}

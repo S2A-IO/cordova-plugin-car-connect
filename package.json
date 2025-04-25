@@ -1,0 +1,37 @@
+{
+  "name": "cordova-plugin-car-connect",
+  "version": "1.0.0",
+  "description": "Seamlessly integrates Apple CarPlay and Android Auto native screens (list + detail) into any Cordova app.",
+  "keywords": [
+    "cordova",
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios",
+    "carplay",
+    "android-auto",
+    "vehicle",
+    "car-connect"
+  ],
+  "cordova": {
+    "id": "cordova-plugin-car-connect",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/S2A-IO/cordova-plugin-car-connect.git"
+  },
+  "bugs": {
+    "url": "https://github.com/S2A-IO/cordova-plugin-car-connect/issues"
+  },
+  "homepage": "https://github.com/S2A-IO/cordova-plugin-car-connect#readme",
+  "author": "RIKSOF <info@riksof.com>",
+  "license": "MIT",
+  "engines": {
+    "cordova": ">=10.0.0",
+    "cordova-android": ">=11.0.0",
+    "cordova-ios": ">=6.2.0"
+  }
+}

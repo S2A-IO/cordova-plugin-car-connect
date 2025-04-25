@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+    id="cordova-plugin-car-connect"
+    version="1.0.0"
+    xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Metadata -->
+    <name>Car Connect</name>
+    <description>Cordova bridge that lets a single mobile code-base present
+        native Apple CarPlay and Android Auto UIs (list + detail screens) and
+        stream user interactions back to JavaScript.</description>
+    <license>MIT</license>
+    <keywords>cordova, plugin, carplay, android auto, car-connect</keywords>
+    <author email="info@riksof.com" href="https://www.riksof.com">
+        RIKSOF, Inc
+    </author>
+
+    <!-- JavaScript -->
+    <js-module src="www/car-connect.js" name="CarConnect">
+        <clobbers target="CarConnect" />
+    </js-module>
+
+    <!-- Global (cross-platform) preferences. Exposed to the developer in config.xml: -->
+    <preference name="CAR_CONNECT_STARTUP_TITLE"   default="Car Connect" />
+    <preference name="CAR_CONNECT_STARTUP_MESSAGE"
+                default="CarConnect plugin ready.\nOpen the mobile app to send content." />
+
+    <!-- Android Section -->
+    <platform name="android">
+        <!-- Java source (kept in src/android/io/s2a/connect/…) -->
+        <source-file src="src/android/io/s2a/connect/CarConnect.java"
+                     target-dir="src/io/s2a/connect" />
+        <source-file src="src/android/io/s2a/connect/CarConnectService.java"
+                     target-dir="src/io/s2a/connect" />
+        <source-file src="src/android/io/s2a/connect/ListViewScreen.java"
+                     target-dir="src/io/s2a/connect" />
+        <source-file src="src/android/io/s2a/connect/DetailViewScreen.java"
+                     target-dir="src/io/s2a/connect" />
+        <source-file src="src/android/io/s2a/connect/CallbackRegistry.java"
+                     target-dir="src/io/s2a/connect" />
+
+        <!-- Android-Auto dependency (Jetpack Car-App) -->
+        <framework src="androidx.car.app:app:1.4.0"
+                   type="gradleReference" />
+        <framework src="src/android/build/build.gradle"
+                   custom="true"
+                   type="gradleReference" />
+
+        <!-- === AndroidManifest merges === -->
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <!-- Declare the bound service so Android Auto can discover us -->
+            <application>
+                <service android:name="io.s2a.connect.CarConnectService"
+                         android:exported="false"
+                         android:foregroundServiceType="connectedDevice"
+                         android:enabled="true">
+                    <intent-filter>
+                        <action android:name="androidx.car.app.CarAppService" />
+                    </intent-filter>
+
+                    <!-- Mark as car-app so Play Services validates -->
+                    <meta-data android:name="androidx.car.app.MIN_API_LEVEL"
+                               android:value="1" />
+                    <meta-data android:name="androidx.car.app.APP_SERVICE"
+                               android:value="true" />
+                </service>
+
+                <!-- Configurable startup title / message -->
+                <meta-data android:name="io.s2a.connect.STARTUP_TITLE"
+                           android:value="$CAR_CONNECT_STARTUP_TITLE" />
+                <meta-data android:name="io.s2a.connect.STARTUP_MESSAGE"
+                           android:value="$CAR_CONNECT_STARTUP_MESSAGE" />
+            </application>
+        </config-file>
+
+    </platform>
+
+    <!-- iOS Section -->
+    <platform name="ios">
+
+        <!-- Swift source -->
+        <source-file src="src/ios/CarConnect.swift"     />
+        <source-file src="src/ios/CarConnectService.swift" />
+        <source-file src="src/ios/SceneDelegate.swift" />
+
+        <!-- CarPlay framework (system-supplied) -->
+        <framework src="CarPlay.framework" type="system" />
+
+        <!-- Ensure Swift support with correct version -->
+        <preference name="UseSwiftLanguageVersion" value="5.0" />
+
+        <!-- Optional: expose the same startup text in Info.plist so you can
+             reference it from native code if desired. -->
+        <config-file target="*-Info.plist" parent="CarConnectStartup">
+            <string>$CAR_CONNECT_STARTUP_MESSAGE</string>
+        </config-file>
+
+    </platform>
+</plugin>
