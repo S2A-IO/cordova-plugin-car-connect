@@ -21,12 +21,17 @@
 
 package io.s2a.connect;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.car.app.validation.HostValidator;
 import androidx.car.app.CarAppService;
 import androidx.car.app.Screen;
 import androidx.car.app.ScreenManager;
@@ -96,6 +101,32 @@ public final class CarConnectService extends CarAppService {
     public void onDestroy() {
         connectionState = STATE_NONE; // Clean up
         super.onDestroy();
+    }
+
+    @Override
+    @NonNull
+    public HostValidator createHostValidator() {
+
+        // ------------------------------------------------------------------
+        // 1. Development builds  →  allow everything (easier testing)
+        // ------------------------------------------------------------------
+        if (BuildConfig.DEBUG) {                  // true for debug variant
+            return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR;
+        }
+
+        // ------------------------------------------------------------------
+        // 2. Production / release builds  →  restrict to known hosts
+        // ------------------------------------------------------------------
+        // List official Android-Auto / Automotive host package names here
+        final Set<String> PROD_HOSTS = new HashSet<>(Arrays.asList(
+            "com.google.android.projection.gearhead", // Android Auto
+            "com.android.car.headunit"               // Automotive OS emulator
+            // add OEM head-units here if required
+        ));
+
+        return new HostValidator.Builder(getApplicationContext())
+            .addAllowedHosts(PROD_HOSTS)
+            .build();
     }
 
     /** Reads a <meta-data> string or returns the supplied default. */
