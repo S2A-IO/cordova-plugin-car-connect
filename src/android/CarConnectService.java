@@ -118,15 +118,31 @@ public final class CarConnectService extends CarAppService {
         // 2. Production / release builds  →  restrict to known hosts
         // ------------------------------------------------------------------
         // List official Android-Auto / Automotive host package names here
-        final Set<String> PROD_HOSTS = new HashSet<>(Arrays.asList(
-            "com.google.android.projection.gearhead", // Android Auto
-            "com.android.car.headunit"               // Automotive OS emulator
-            // add OEM head-units here if required
-        ));
+        final Set<AllowedHost> prodHostsSet = Set.of(
+            new AllowedHost("com.google.android.projection.gearhead",
+                        "fdb00c43dbde8b51cb312aa81d3b5fa17713adb94b28f598d77f8eb89daceedf"),
+            new AllowedHost("com.google.android.projection.gearhead",
+                        "70811a3eacfd2e83e18da9bfede52df16ce91f2e69a44d21f18ab66991130771"),
+            new AllowedHost("com.google.android.projection.gearhead",
+                        "1975b2f17177bc89a5dff31f9e64a6cae281a53dc1d1d59b1d147fe1c82afa00"),
+            new AllowedHost("com.google.android.apps.automotive.templates.host",
+                        "c241ffbc8e287c4e9a4ad19632ba1b1351ad361d5177b7d7b29859bd2b7fc631"),
+            new AllowedHost("com.google.android.apps.automotive.templates.host",
+                        "dd66deaf312d8daec7adbe85a218ecc8c64f3b152f9b5998d5b29300c2623f61"),
+            new AllowedHost("com.google.android.apps.automotive.templates.host",
+                        "50e603d333c6049a37bd751375d08f3bd0abebd33facd30bd17b64b89658b421")            
+            // add OEM head units here …
+        );
+        
+        HostValidator.Builder builder =
+           new HostValidator.Builder(getApplicationContext());
 
-        return new HostValidator.Builder(getApplicationContext())
-            .addAllowedHosts(PROD_HOSTS)
-            .build();
+        for (AllowedHost host : prodHostsSet) {
+            builder.addAllowedHost(host.packageName(), host.sha256Digest());
+        }
+
+        HostValidator validator = builder.build();
+        return validator;
     }
 
     /**
