@@ -50,30 +50,29 @@
                    type="gradleReference" />
 
         <!-- === AndroidManifest merges === -->
-        <config-file target="AndroidManifest.xml" parent="/manifest">
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
             <!-- Declare the bound service so Android Auto can discover us -->
-            <application>
-                <service android:name="io.s2a.connect.CarConnectService"
-                         android:exported="false"
-                         android:foregroundServiceType="connectedDevice"
-                         android:enabled="true">
-                    <intent-filter>
-                        <action android:name="androidx.car.app.CarAppService" />
-                    </intent-filter>
+            <service android:name="io.s2a.connect.CarConnectService"
+                android:exported="true"
+                android:foregroundServiceType="connectedDevice"
+                android:enabled="true">
+                
+                <intent-filter>
+                    <action android:name="androidx.car.app.CarAppService" />
+                </intent-filter>
 
-                    <!-- Mark as car-app so Play Services validates -->
-                    <meta-data android:name="androidx.car.app.MIN_API_LEVEL"
-                               android:value="1" />
-                    <meta-data android:name="androidx.car.app.APP_SERVICE"
-                               android:value="true" />
-                </service>
+                <!-- Mark as car-app so Play Services validates -->
+                <meta-data android:name="androidx.car.app.MIN_API_LEVEL"
+                    android:value="1" />
+                <meta-data android:name="androidx.car.app.APP_SERVICE"
+                    android:value="true" />
+            </service>
 
                 <!-- Configurable startup title / message -->
-                <meta-data android:name="io.s2a.connect.STARTUP_TITLE"
-                           android:value="$CAR_CONNECT_STARTUP_TITLE" />
-                <meta-data android:name="io.s2a.connect.STARTUP_MESSAGE"
-                           android:value="$CAR_CONNECT_STARTUP_MESSAGE" />
-            </application>
+            <meta-data android:name="io.s2a.connect.STARTUP_TITLE"
+                android:value="$CAR_CONNECT_STARTUP_TITLE" />
+            <meta-data android:name="io.s2a.connect.STARTUP_MESSAGE"
+                android:value="$CAR_CONNECT_STARTUP_MESSAGE" />
         </config-file>
 
     </platform>
