@@ -3,6 +3,8 @@
  * 
  * Copyright © 2025 RIKSOF. MIT License.
  */
+package io.s2a.connect;
+
 public final class AllowedHost {
     private final String packageName;
     private final String sha256Digest;
