@@ -110,7 +110,7 @@ public final class CarConnectService extends CarAppService {
         // ------------------------------------------------------------------
         // 1. Development builds  →  allow everything (easier testing)
         // ------------------------------------------------------------------
-        if (BuildConfig.DEBUG) {                  // true for debug variant
+        if (isDebugBuild()) {                  // true for debug variant
             return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR;
         }
 
@@ -127,6 +127,13 @@ public final class CarConnectService extends CarAppService {
         return new HostValidator.Builder(getApplicationContext())
             .addAllowedHosts(PROD_HOSTS)
             .build();
+    }
+
+    /**
+     * Determing if this is a debug build.
+     */
+    private boolean isDebugBuild() {
+        return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
     }
 
     /** Reads a <meta-data> string or returns the supplied default. */
