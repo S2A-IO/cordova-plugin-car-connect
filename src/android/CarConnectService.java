@@ -42,6 +42,8 @@ import androidx.car.app.model.Template;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+public record AllowedHost(String packageName, String sha256Digest) { }
+
 /**
  * Android‑Auto service entry point for the Cordova "car-connect" plugin.
  */
