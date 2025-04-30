@@ -21,13 +21,6 @@
         <clobbers target="CarConnect" />
     </js-module>
 
-    <feature name="CarConnect">
-        <!-- Java side -->
-        <param name="android-package" value="io.s2a.connect.CarConnect" />
-        <!-- iOS side -->
-        <param name="ios-package" value="CarConnect" />
-    </feature>
-
     <!-- Global (cross-platform) preferences. Exposed to the developer in config.xml: -->
     <preference name="CAR_CONNECT_STARTUP_TITLE"   default="Car Connect" />
     <preference name="CAR_CONNECT_STARTUP_MESSAGE"
@@ -55,6 +48,13 @@
         <framework src="src/android/build/build.gradle"
                    custom="true"
                    type="gradleReference" />
+
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="CarConnect">
+                <param name="android-package" value="io.s2a.connect.CarConnect"/>
+                <param name="onload" value="false"/>
+            </feature>
+        </config-file>
 
         <!-- === AndroidManifest merges === -->
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
@@ -86,6 +86,12 @@
 
     <!-- iOS Section -->
     <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="CarConnect">
+                <!-- iOS side -->
+                <param name="ios-package" value="CarConnect" />
+            </feature>
+        </config-file>
 
         <!-- Swift source -->
         <source-file src="src/ios/CarConnect.swift"     />
