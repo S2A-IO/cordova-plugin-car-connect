@@ -64,23 +64,22 @@
             <!-- Declare the bound service so Android Auto can discover us -->
             <service android:name="io.s2a.connect.CarConnectService"
                 android:exported="true"
-                android:foregroundServiceType="connectedDevice"
                 android:enabled="true">
                 
                 <intent-filter>
                     <action android:name="androidx.car.app.CarAppService" />
+                    <category android:name="androidx.car.app.category.IOT" />
                 </intent-filter>
 
                 <!-- Mark as car-app so Play Services validates -->
                 <meta-data android:name="androidx.car.app.MIN_API_LEVEL"
                     android:value="1" />
-                <meta-data android:name="androidx.car.app.APP_SERVICE"
-                    android:value="true" />
             </service>
 
             <!-- Required descriptor for Jetpack Car-App 1.3+ -->
-            <meta-data android:name="androidx.car.app.CAR_APP"
-               android:resource="@xml/car_app_desc" />
+            <<meta-data android:name="com.google.android.gms.car.application"
+                android:resource="@xml/car_app_desc" />
+
 
             <!-- Configurable startup title / message -->
             <meta-data android:name="io.s2a.connect.STARTUP_TITLE"
