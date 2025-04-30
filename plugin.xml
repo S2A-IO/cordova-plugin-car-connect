@@ -21,6 +21,13 @@
         <clobbers target="CarConnect" />
     </js-module>
 
+    <feature name="CarConnect">
+        <!-- Java side -->
+        <param name="android-package" value="io.s2a.connect.CarConnect" />
+        <!-- iOS side -->
+        <param name="ios-package" value="CarConnect" />
+    </feature>
+
     <!-- Global (cross-platform) preferences. Exposed to the developer in config.xml: -->
     <preference name="CAR_CONNECT_STARTUP_TITLE"   default="Car Connect" />
     <preference name="CAR_CONNECT_STARTUP_MESSAGE"
