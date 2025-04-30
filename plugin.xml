@@ -42,6 +42,9 @@
         <source-file src="src/android/CallbackRegistry.java"
                      target-dir="src/io/s2a/connect" />
 
+        <resource-file src="src/android/res/xml/car_app_desc.xml"
+                     target="res/xml/car_app_desc.xml" />
+
         <!-- Android-Auto dependency (Jetpack Car-App) -->
         <framework src="androidx.car.app:app:1.4.0"
                    type="gradleReference" />
@@ -75,7 +78,11 @@
                     android:value="true" />
             </service>
 
-                <!-- Configurable startup title / message -->
+            <!-- Required descriptor for Jetpack Car-App 1.3+ -->
+            <meta-data android:name="androidx.car.app.CAR_APP"
+               android:resource="@xml/car_app_desc" />
+
+            <!-- Configurable startup title / message -->
             <meta-data android:name="io.s2a.connect.STARTUP_TITLE"
                 android:value="$CAR_CONNECT_STARTUP_TITLE" />
             <meta-data android:name="io.s2a.connect.STARTUP_MESSAGE"
