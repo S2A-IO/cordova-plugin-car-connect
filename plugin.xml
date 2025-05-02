@@ -72,7 +72,7 @@
                 </intent-filter>
 
                 <!-- Mark as car-app so Play Services validates -->
-                <meta-data android:name="androidx.car.app.MIN_API_LEVEL"
+                <meta-data android:name="androidx.car.app.minCarApiLevel"
                     android:value="1" />
             </service>
 
