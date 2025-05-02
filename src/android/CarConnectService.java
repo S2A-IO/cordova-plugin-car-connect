@@ -43,12 +43,12 @@ import androidx.car.app.model.Template;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-private static final String TAG = "CarConnectService";
 
 /**
  * Android‑Auto service entry point for the Cordova "car-connect" plugin.
  */
 public final class CarConnectService extends CarAppService {
+    private static final String TAG = "CarConnectService";
     // Connection state constants ---------------------------------------
     public static final int STATE_NONE         = 0;
     public static final int STATE_CARPLAY      = 1; // Placeholder – not used on Android
