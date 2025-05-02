@@ -43,7 +43,7 @@ import androidx.car.app.model.Template;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-private const val TAG = "CarConnectService";
+private static final String TAG = "CarConnectService";
 
 /**
  * Android‑Auto service entry point for the Cordova "car-connect" plugin.
