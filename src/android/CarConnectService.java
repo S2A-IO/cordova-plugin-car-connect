@@ -23,6 +23,7 @@ package io.s2a.connect;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import android.util.Log;
 import java.util.Set;
 
 import android.content.Intent;
@@ -42,6 +43,7 @@ import androidx.car.app.model.Template;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+private const val TAG = "CarConnectService";
 
 /**
  * Android‑Auto service entry point for the Cordova "car-connect" plugin.
@@ -74,6 +76,8 @@ public final class CarConnectService extends CarAppService {
     @NonNull
     @Override
     public Session onCreateSession() {
+        Log.d(TAG, "onCreateSession()");
+
         connectionState = STATE_ANDROID_AUTO; // Host bound – we’re live.
         currentSession = new CarConnectSession(
                 fetchMetaOrDefault(META_STARTUP_MESSAGE, DEFAULT_STARTUP_MESSAGE),
@@ -107,7 +111,10 @@ public final class CarConnectService extends CarAppService {
     @Override
     @NonNull
     public HostValidator createHostValidator() {
+        Log.i(TAG, "Using ALLOW_ALL_HOSTS_VALIDATOR");
 
+        return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR;
+        /*
         // ------------------------------------------------------------------
         // 1. Development builds  →  allow everything (easier testing)
         // ------------------------------------------------------------------
@@ -143,7 +150,7 @@ public final class CarConnectService extends CarAppService {
         }
 
         HostValidator validator = builder.build();
-        return validator;
+        return validator;*/
     }
 
     /**
