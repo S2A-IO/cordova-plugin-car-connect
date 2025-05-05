@@ -17,77 +17,77 @@
  * 
  * Copyright © 2025 RIKSOF. MIT License.
  */
-
-/**
- * CarConnect.swift – Cordova plugin entry-point (iOS side)
- * -----------------------------------------------------------------------------
- * Exposes to JavaScript:
- *   • showListView(items, cb)
- *   • showDetailView(pairs, buttons, cb)
- *   • isConnected()   → 0 (none) | 1 (CarPlay) | 2 (Android Auto – never on iOS)
- *
- * Heavy UI work is done by CarConnectService.shared, which listens for the
- * notifications we post below.  Interaction events from CarPlay flow back to JS
- * through the kept Cordova callbacks.
- * -----------------------------------------------------------------------------
- */
-
 import Foundation
 import UIKit
-import CarPlay
+import CarPlay          // CarPlay symbols (CPListItem, …)
 
 @available(iOS 14.0, *)
-@objc(CarConnect)          // must match plugin.xml
+@objc(CarConnect)       // must match plugin.xml <feature ios-package>
 class CarConnect: CDVPlugin {
-    // Hold a weak reference so static emitters can reach the plugin
+
+    // ------------------------------------------------------------
+    // Singleton reference so static emitters can reach the plugin.
+    // ------------------------------------------------------------
     private static weak var shared: CarConnect?
 
     // Callback IDs cached so native UI can stream events
     private var listCallbackId:   String?
     private var detailCallbackId: String?
 
+    // ------------------------------------------------------------
     // Lifecycle
+    // ------------------------------------------------------------
     override func pluginInitialize() {
         super.pluginInitialize()
-        CarConnect.shared = self
+        CarConnect.shared = self               // keep reference
     }
 
-    // Show list View
+    // ------------------------------------------------------------
+    // JavaScript-exposed actions
+    // Each one is annotated with @objc(actionName:)
+    // ------------------------------------------------------------
+
+    /// JS → CarConnect.showListView(items,…)
     @objc(showListView:)
     private func showListView(_ cmd: CDVInvokedUrlCommand) {
         listCallbackId = cmd.callbackId
 
         let payload = cmd.arguments.first as? [String: Any] ?? [:]
-        NotificationCenter.default.post(name: .carConnectShowListView,
-                                        object: nil,
-                                        userInfo: ["payload": payload])
+        NotificationCenter.default.post(
+            name: .carConnectShowListView,
+            object: nil,
+            userInfo: ["payload": payload]
+        )
 
         keepCallbackOpen(for: cmd.callbackId)
     }
 
-    // Show detail view
+    /// JS → CarConnect.showDetailView(pairs, buttons,…)
     @objc(showDetailView:)
     private func showDetailView(_ cmd: CDVInvokedUrlCommand) {
         detailCallbackId = cmd.callbackId
 
         let payload = cmd.arguments.first as? [String: Any] ?? [:]
-        NotificationCenter.default.post(name: .carConnectShowDetailView,
-                                        object: nil,
-                                        userInfo: ["payload": payload])
+        NotificationCenter.default.post(
+            name: .carConnectShowDetailView,
+            object: nil,
+            userInfo: ["payload": payload]
+        )
 
         keepCallbackOpen(for: cmd.callbackId)
     }
 
-    // Is connected?
+    /// JS → CarConnect.isConnected()
     @objc(isConnected:)
     private func isConnected(_ cmd: CDVInvokedUrlCommand) {
-        let state = CarConnectService.shared.connectionState.rawValue  // 0 or 1
+        let state = CarConnectService.shared.connectionState.rawValue // 0 or 1
         let res   = CDVPluginResult(status: .ok, messageAs: state)
         commandDelegate.send(res, callbackId: cmd.callbackId)
     }
 
-    // Helpers
-
+    // ------------------------------------------------------------
+    // Helper to keep callback channel open
+    // ------------------------------------------------------------
     private func keepCallbackOpen(for cbID: String?) {
         guard let id = cbID else { return }
         let res = CDVPluginResult(status: .noResult)
@@ -95,10 +95,13 @@ class CarConnect: CDVPlugin {
         commandDelegate.send(res, callbackId: id)
     }
 
-    // Native → JS emitters (called by CarConnectService)
+    // ------------------------------------------------------------
+    // Native → JS emitters (called from CarConnectService)
+    // ------------------------------------------------------------
+
     static func emitListItemTapped(_ jsonString: String) {
         guard
-            let plugin = CDVPlugin.getInstance("CarConnect") as? CarConnect,
+            let plugin = CarConnect.shared,
             let cbID   = plugin.listCallbackId
         else { return }
 
@@ -109,7 +112,7 @@ class CarConnect: CDVPlugin {
 
     static func emitDetailButtonPressed(_ jsonString: String) {
         guard
-            let plugin = CDVPlugin.getInstance("CarConnect") as? CarConnect,
+            let plugin = CarConnect.shared,
             let cbID   = plugin.detailCallbackId
         else { return }
 
@@ -119,10 +122,12 @@ class CarConnect: CDVPlugin {
     }
 }
 
-// MARK: – Notification names used between plugin and service
-
+// ------------------------------------------------------------
+// Notification names shared with CarConnectService
+// ------------------------------------------------------------
 extension Notification.Name {
     static let carConnectShowListView   = Notification.Name("CarConnectShowListView")
     static let carConnectShowDetailView = Notification.Name("CarConnectShowDetailView")
 }
+
 
