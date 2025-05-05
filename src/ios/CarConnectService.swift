@@ -23,6 +23,7 @@ import Foundation
 import CarPlay
 import UIKit
 
+@available(iOS 14.0, *)
 class CarConnectService: NSObject {
 
     // MARK: - Singleton
@@ -41,7 +42,6 @@ class CarConnectService: NSObject {
 
     // MARK: - Scene / interface references
     private weak var interfaceController: CPInterfaceController?
-    private weak var carWindow: UIWindow?
 
     // Call from SceneDelegate when CarPlay scene connects
     func scene(_ scene: CPTemplateApplicationScene,
@@ -49,7 +49,6 @@ class CarConnectService: NSObject {
                to window: UIWindow) {
 
         self.interfaceController = interfaceController
-        self.carWindow           = window
         connectionState          = .carPlay
 
         // Initial placeholder screen
@@ -82,74 +81,74 @@ class CarConnectService: NSObject {
     // MARK: - Show list view
 
     @objc private func handleShowListView(_ note: Notification) {
-        guard let uiPayload = note.userInfo?["payload"] as? [String: Any],
-              let items     = uiPayload["items"] as? [[String: Any]],
-              let iface     = interfaceController else { return }
+        guard
+            #available(iOS 14.0, *),
+            let payload = note.userInfo?["payload"] as? [String: Any],
+            let items   = payload["items"] as? [[String: Any]],
+            let iface   = interfaceController
+        else { return }
 
         var listItems: [CPListItem] = []
 
         for itm in items {
-            let title = itm["title"] as? String ?? ""
-            let desc  = itm["description"] as? String ?? ""
-
-            let li = CPListItem(text: title, detailText: desc)
-            li.handler = { _, _ in
-                // Echo entire item back to JS
-                if let jsonData = try? JSONSerialization.data(withJSONObject: itm),
-                   let jsonStr  = String(data: jsonData, encoding: .utf8) {
-                    CarConnect.emitListItemTapped(jsonStr)
+            let li = CPListItem(text: itm["title"] as? String ?? "",
+                                detailText: itm["description"] as? String ?? "")
+            li.handler = { _, _ in         // handler is iOS 14+
+                if
+                  let data = try? JSONSerialization.data(withJSONObject: itm),
+                  let json = String(data: data, encoding: .utf8) {
+                    CarConnect.emitListItemTapped(json)
                 }
             }
             listItems.append(li)
         }
 
         let section = CPListSection(items: listItems)
-        let list    = CPListTemplate(title: "Select an item", sections: [section])
-        iface.pushTemplate(list, animated: true)
+        let listTpl = CPListTemplate(title: "Select an item",
+                                     sections: [section])
+        iface.pushTemplate(listTpl, animated: true)
     }
 
     // MARK: - Show detail view
 
     @objc private func handleShowDetailView(_ note: Notification) {
-        guard let uiPayload = note.userInfo?["payload"] as? [String: Any],
-              let pairs   = uiPayload["pairs"]   as? [[String: Any]],
-              let buttons = uiPayload["buttons"] as? [[String: Any]]?,
-              let iface   = interfaceController else { return }
+        guard
+            #available(iOS 14.0, *),
+            let payload = note.userInfo?["payload"] as? [String: Any],
+            let pairs   = payload["pairs"]   as? [[String: Any]],
+            let buttons = payload["buttons"] as? [[String: Any]],
+            let iface   = interfaceController
+        else { return }
 
-        // Compose rows
+        // Key/value rows
         var rows: [CPInformationItem] = []
         for p in pairs {
-            let key   = p["key"]   as? String ?? ""
-            let value = p["value"] as? String ?? ""
-            rows.append(CPInformationItem(title: key, detail: value))
+            rows.append(CPInformationItem(title: p["key"] as? String ?? "",
+                                          detail: p["value"] as? String ?? ""))
         }
 
-        // Compose up to 2 actions
+        // Up to two buttons
         var actions: [CPTextButton] = []
-        if let btns = buttons {
-            for b in btns.prefix(2) {
-                let text = b["text"] as? String ?? "Button"
-                let id   = b["id"]   as? String ?? ""
-                let role = (b["type"] as? String)?.lowercased() == "primary"
-                           ? CPTextButton.Role.confirm
-                           : CPTextButton.Role.none
+        for b in buttons.prefix(2) {
+            let style: CPTextButton.Style =
+                (b["type"] as? String)?.lowercased() == "primary"
+                ? .confirm : .normal
 
-                let btn  = CPTextButton(title: text, style: role) { _ in
-                    if let jsonData = try? JSONSerialization.data(withJSONObject: b),
-                       let jsonStr  = String(data: jsonData, encoding: .utf8) {
-                        CarConnect.emitDetailButtonPressed(jsonStr)
-                    }
+            let btn = CPTextButton(title: b["text"] as? String ?? "Button",
+                                   style: style) { _ in
+                if
+                  let data = try? JSONSerialization.data(withJSONObject: b),
+                  let json = String(data: data, encoding: .utf8) {
+                    CarConnect.emitDetailButtonPressed(json)
                 }
-                actions.append(btn)
             }
+            actions.append(btn)
         }
 
-        let pane = CPInformationTemplate(
-            title: "Details",
-            layout: .leading,
-            items: rows,
-            actions: actions
-        )
+        let pane = CPInformationTemplate(title: "Details",
+                                         layout: .leading,
+                                         items: rows,
+                                         actions: actions)
         iface.pushTemplate(pane, animated: true)
     }
 }
