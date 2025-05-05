@@ -36,6 +36,7 @@ import Foundation
 import UIKit
 import CarPlay
 
+@available(iOS 14.0, *)
 @objc(CarConnect)          // must match plugin.xml
 class CarConnect: CDVPlugin {
     // Hold a weak reference so static emitters can reach the plugin
