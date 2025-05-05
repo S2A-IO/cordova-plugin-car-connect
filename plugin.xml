@@ -107,7 +107,7 @@
         <framework src="CarPlay.framework" type="system" />
 
         <!-- Ensure Swift support with correct version -->
-        <preference name="UseSwiftLanguageVersion" value="5.0" />
+        <preference name="UseSwiftLanguageVersion" default="5.0" />
 
         <!-- Optional: expose the same startup text in Info.plist so you can
              reference it from native code if desired. -->
