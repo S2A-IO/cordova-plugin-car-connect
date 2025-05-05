@@ -3,6 +3,10 @@
  *
  * Copyright © 2025 RIKSOF. MIT License.
  */
+import UIKit
+import CarPlay
+
+@available(iOS 14.0, *)
 class SceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     func templateApplicationScene(_ scene: CPTemplateApplicationScene,
