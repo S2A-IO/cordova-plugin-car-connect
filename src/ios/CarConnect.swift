@@ -51,24 +51,6 @@ class CarConnect: CDVPlugin {
         CarConnect.shared = self
     }
 
-    // JS action dispatcher
-    override func execute(_ command: CDVInvokedUrlCommand!) {
-        guard let action = command?.commandName else { return }
-
-        switch action {
-        case "showListView":
-            showListView(command)
-        case "showDetailView":
-            showDetailView(command)
-        case "isConnected":
-            isConnected(command)
-        default:
-            let res = CDVPluginResult(status: .error,
-                                      messageAs: "Unknown action \(action)")
-            commandDelegate.send(res, callbackId: command.callbackId)
-        }
-    }
-
     // Show list View
     @objc(showListView:)
     private func showListView(_ cmd: CDVInvokedUrlCommand) {
