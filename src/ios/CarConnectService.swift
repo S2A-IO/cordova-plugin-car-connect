@@ -26,23 +26,21 @@ import CarPlay
 @available(iOS 14.0, *)
 class CarConnectService: NSObject {
 
-    // MARK: - Singleton
+    // MARK: - Singleton -------------------------------------------------
     static let shared = CarConnectService()
     private override init() {
         super.init()
         registerForPluginNotifications()
     }
 
-    // MARK: - Connection state (0 / 1 / 2)
+    // MARK: - Connection state (0 / 1 / 2) ------------------------------
     enum State: Int { case none = 0, carPlay = 1, androidAuto = 2 }
     private(set) var connectionState: State = .none
 
-    // MARK: - Scene / interface references
+    // MARK: - Scene references ------------------------------------------
     private weak var interfaceController: CPInterfaceController?
 
-    // ------------------------------------------------------------------
-    // SceneDelegate forwards CarPlay scene events here
-    // ------------------------------------------------------------------
+    // Called from SceneDelegate when CarPlay scene connects
     func scene(_ scene: CPTemplateApplicationScene,
                didConnect interfaceController: CPInterfaceController,
                to window: UIWindow) {
@@ -50,9 +48,8 @@ class CarConnectService: NSObject {
         self.interfaceController = interfaceController
         connectionState          = .carPlay
 
-        // Placeholder template shown until JS sends real content.
-        let placeholder = placeholderTemplate()
-        interfaceController.setRootTemplate(placeholder, animated: false)
+        interfaceController.setRootTemplate(placeholderTemplate(),
+                                            animated: false)
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -61,30 +58,25 @@ class CarConnectService: NSObject {
     }
 
     private func placeholderTemplate() -> CPTemplate {
-        let item     = CPListItem(text: "Open the app on your phone.", detailText: nil)
-        let section  = CPListSection(items: [item])
+        let item    = CPListItem(text: "Open the app on your phone.", detailText: nil)
+        let section = CPListSection(items: [item])
         return CPListTemplate(title: "Car Connect", sections: [section])
     }
 
-    // ------------------------------------------------------------------
-    // Listen for notifications posted by CarConnect.swift
-    // ------------------------------------------------------------------
+    // MARK: - Notification wiring ---------------------------------------
     private func registerForPluginNotifications() {
         let nc = NotificationCenter.default
         nc.addObserver(self,
                        selector: #selector(handleShowListView(_:)),
                        name: .carConnectShowListView,
                        object: nil)
-
         nc.addObserver(self,
                        selector: #selector(handleShowDetailView(_:)),
                        name: .carConnectShowDetailView,
                        object: nil)
     }
 
-    // ------------------------------------------------------------------
-    // Build & push ListTemplate
-    // ------------------------------------------------------------------
+    // MARK: - Show list view --------------------------------------------
     @objc private func handleShowListView(_ note: Notification) {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
@@ -106,14 +98,12 @@ class CarConnectService: NSObject {
             listItems.append(li)
         }
 
-        let section = CPListSection(items: listItems)
-        let listTpl = CPListTemplate(title: "Select an item", sections: [section])
+        let listTpl = CPListTemplate(title: "Select an item",
+                                     sections: [CPListSection(items: listItems)])
         iface.pushTemplate(listTpl, animated: true)
     }
 
-    // ------------------------------------------------------------------
-    // Build & push InformationTemplate
-    // ------------------------------------------------------------------
+    // MARK: - Show detail view ------------------------------------------
     @objc private func handleShowDetailView(_ note: Notification) {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
@@ -132,12 +122,12 @@ class CarConnectService: NSObject {
         // Up to two buttons
         var actions = [CPTextButton]()
         for b in buttons.prefix(2) {
-            let type: CPTextButtonType =
+            let style: CPTextButtonStyle =
                 (b["type"] as? String)?.lowercased() == "primary"
-                ? .confirm : .text
+                ? .confirm : .normal
 
-            let btn = CPTextButton(type: type,
-                                   title: b["text"] as? String ?? "Button") { _ in
+            let btn = CPTextButton(title: b["text"] as? String ?? "Button",
+                                   textStyle: style) { _ in
                 if
                   let data = try? JSONSerialization.data(withJSONObject: b),
                   let json = String(data: data, encoding: .utf8) {
