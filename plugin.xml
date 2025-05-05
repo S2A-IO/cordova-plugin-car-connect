@@ -115,5 +115,14 @@
             <string>$CAR_CONNECT_STARTUP_MESSAGE</string>
         </config-file>
 
+        <!-- Copy the bridging header -->
+        <header-file src="src/ios/CarConnect-Bridging-Header.h" />
+
+        <!-- Tell Xcode to use the bridging header -->
+        <config-file target="*-BuildConfiguration.xcconfig"
+            parent="SWIFT_OBJC_BRIDGING_HEADER">
+            <string>$(PROJECT_DIR)/$(PROJECT_NAME)/Plugins/cordova-plugin-car-connect/CarConnect-Bridging-Header.h</string>
+        </config-file>
+
     </platform>
 </plugin>

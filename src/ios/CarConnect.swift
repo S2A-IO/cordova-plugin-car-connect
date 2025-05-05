@@ -33,7 +33,6 @@
  */
 
 import Foundation
-import Cordova
 import UIKit
 import CarPlay
 
