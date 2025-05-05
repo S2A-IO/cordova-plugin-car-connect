@@ -38,21 +38,20 @@ import CarPlay
 
 @objc(CarConnect)          // must match plugin.xml
 class CarConnect: CDVPlugin {
+    // Hold a weak reference so static emitters can reach the plugin
+    private static weak var shared: CarConnect?
 
-    // MARK: – Callback IDs cached so native UI can stream events
-
+    // Callback IDs cached so native UI can stream events
     private var listCallbackId:   String?
     private var detailCallbackId: String?
 
-    // MARK: – Lifecycle
-
+    // Lifecycle
     override func pluginInitialize() {
         super.pluginInitialize()
-        // Nothing else: CarConnectService registers for our notifications.
+        CarConnect.shared = self
     }
 
-    // MARK: – JS action dispatcher
-
+    // JS action dispatcher
     override func execute(_ command: CDVInvokedUrlCommand!) {
         guard let action = command?.commandName else { return }
 
@@ -70,8 +69,8 @@ class CarConnect: CDVPlugin {
         }
     }
 
-    // MARK: – Public API methods
-
+    // Show list View
+    @objc(showListView:)
     private func showListView(_ cmd: CDVInvokedUrlCommand) {
         listCallbackId = cmd.callbackId
 
@@ -83,6 +82,8 @@ class CarConnect: CDVPlugin {
         keepCallbackOpen(for: cmd.callbackId)
     }
 
+    // Show detail view
+    @objc(showDetailView:)
     private func showDetailView(_ cmd: CDVInvokedUrlCommand) {
         detailCallbackId = cmd.callbackId
 
@@ -94,13 +95,15 @@ class CarConnect: CDVPlugin {
         keepCallbackOpen(for: cmd.callbackId)
     }
 
+    // Is connected?
+    @objc(isConnected:)
     private func isConnected(_ cmd: CDVInvokedUrlCommand) {
         let state = CarConnectService.shared.connectionState.rawValue  // 0 or 1
         let res   = CDVPluginResult(status: .ok, messageAs: state)
         commandDelegate.send(res, callbackId: cmd.callbackId)
     }
 
-    // MARK: – Helpers
+    // Helpers
 
     private func keepCallbackOpen(for cbID: String?) {
         guard let id = cbID else { return }
@@ -109,8 +112,7 @@ class CarConnect: CDVPlugin {
         commandDelegate.send(res, callbackId: id)
     }
 
-    // MARK: – Native → JS emitters (called by CarConnectService)
-
+    // Native → JS emitters (called by CarConnectService)
     static func emitListItemTapped(_ jsonString: String) {
         guard
             let plugin = CDVPlugin.getInstance("CarConnect") as? CarConnect,
