@@ -9,17 +9,22 @@ import CarPlay
 @available(iOS 14.0, *)
 class SceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
-    func templateApplicationScene(_ scene: CPTemplateApplicationScene,
+    /// Called when the CarPlay scene becomes active.
+    func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didConnect interfaceController: CPInterfaceController,
-                                  to window: UIWindow) {
-        CarConnectService.shared.scene(scene,
+                                  to window: CPWindow) {
+
+        CarConnectService.shared.scene(templateApplicationScene,
                                        didConnect: interfaceController,
                                        to: window)
     }
 
-    func templateApplicationScene(_ scene: CPTemplateApplicationScene,
+    /// Called when the CarPlay scene disconnects.
+    func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didDisconnect interfaceController: CPInterfaceController,
-                                  from window: UIWindow) {
-        CarConnectService.shared.sceneDidDisconnect(scene)
+                                  from window: CPWindow) {
+
+        CarConnectService.shared.sceneDidDisconnect(templateApplicationScene)
     }
 }
+
