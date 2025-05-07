@@ -115,6 +115,31 @@
             <string>$CAR_CONNECT_STARTUP_MESSAGE</string>
         </config-file>
 
+        <!-- CarPlay Scene configuration -->
+        <config-file target="*-Info.plist" parent="UIApplicationSceneManifest">
+            <dict>
+                <key>UISceneConfigurations</key>
+                <dict>
+                    <!-- CarPlay template scene (list / audio / parking, etc.) -->
+                    <key>CPTemplateApplicationSceneSessionRoleApplication</key>
+                    <array>
+                        <dict>
+                            <key>UISceneClassName</key>
+                            <string>CPTemplateApplicationScene</string>
+
+                            <!-- Must match your delegate class name -->
+                            <key>UISceneDelegateClassName</key>
+                            <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+
+                            <!-- Optional: purely descriptive -->
+                            <key>UISceneConfigurationName</key>
+                            <string>CarPlay Configuration</string>
+                        </dict>
+                    </array>
+                </dict>
+            </dict>
+        </config-file>
+
         <!-- Copy the bridging header -->
         <header-file src="src/ios/CarConnect-Bridging-Header.h" />
 
