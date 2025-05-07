@@ -42,8 +42,7 @@ class CarConnectService: NSObject {
 
     // Called from SceneDelegate when CarPlay scene connects
     func scene(_ scene: CPTemplateApplicationScene,
-               didConnect interfaceController: CPInterfaceController,
-               to window: UIWindow) {
+               didConnect interfaceController: CPInterfaceController) {
 
         self.interfaceController = interfaceController
         connectionState          = .carPlay
@@ -52,11 +51,24 @@ class CarConnectService: NSObject {
                                             animated: false)
     }
 
-    func sceneDidDisconnect(_ scene: UIScene) {
-        connectionState   = .none
+    // For future-proofing you may keep the window variant and forward to
+    // the two-parameter method; harmless if never called.
+    func scene(_ scene: CPTemplateApplicationScene,
+               didConnect interfaceController: CPInterfaceController,
+               to window: CPWindow) {
+
+        self.scene(scene, didConnect: interfaceController)
+    }
+
+    // -------------------------------------------------------------------
+    //  CarPlay scene disconnected
+    // -------------------------------------------------------------------
+    func sceneDidDisconnect(_ scene: CPTemplateApplicationScene) {
+        connectionState    = .none
         interfaceController = nil
     }
 
+    // MARK: - Placeholder template --------------------------------------
     private func placeholderTemplate() -> CPTemplate {
         let item    = CPListItem(text: "Open the app on your phone.", detailText: nil)
         let section = CPListSection(items: [item])
@@ -144,4 +156,5 @@ class CarConnectService: NSObject {
         iface.pushTemplate(pane, animated: true)
     }
 }
+
 
