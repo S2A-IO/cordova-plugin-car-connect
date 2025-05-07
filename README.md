@@ -49,6 +49,14 @@ In your project’s **`config.xml`**:
 <preference name="CAR_CONNECT_STARTUP_MESSAGE" value="Waiting for content…" />
 ```
 
+Additionally, for Android you need to add the Android Auto permissions in your ``config.xml``:
+
+```xml
+<uses-permission android:name="androidx.car.app.permission.CarApp"/>
+```
+
+For iOS, you need to ensure CarPlay is added in your entitlements.
+
 These values populate the placeholder screen that appears on the head‑unit before your app sends real content.
 
 ---
