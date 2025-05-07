@@ -11,8 +11,8 @@ class SceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     /// Called when the CarPlay scene becomes active.
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
-                                  didConnect interfaceController: CPInterfaceController,
-                                  to window: CPWindow) {
+                                  didConnectInterfaceController interfaceController: CPInterfaceController,
+                                  toWindow window: CPWindow) {
 
         CarConnectService.shared.scene(templateApplicationScene,
                                        didConnect: interfaceController,
@@ -21,10 +21,11 @@ class SceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     /// Called when the CarPlay scene disconnects.
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
-                                  didDisconnect interfaceController: CPInterfaceController,
-                                  from window: CPWindow) {
+                                  didDisconnectInterfaceController interfaceController: CPInterfaceController,
+                                  fromWindow window: CPWindow) {
 
         CarConnectService.shared.sceneDidDisconnect(templateApplicationScene)
     }
 }
+
 
