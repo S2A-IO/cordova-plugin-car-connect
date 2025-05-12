@@ -57,7 +57,8 @@ import java.util.List;
  */
 public class ListViewScreen extends Screen {
 
-    private final ListTemplate template;
+    private final JSONObject payloadJson;
+    private ListTemplate template;
 
     /**
      * Builds a {@link ListViewScreen} from the items JSON.
@@ -69,6 +70,7 @@ public class ListViewScreen extends Screen {
     public ListViewScreen(@NonNull CarContext ctx, @NonNull JSONObject payload,
                           @NonNull CallbackContext cb) throws JSONException {
         super(ctx);
+        this.payloadJson = payload;
         this.template = buildTemplate(ctx, payload, cb);
     }
 
@@ -136,11 +138,11 @@ public class ListViewScreen extends Screen {
                     ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
                         @Override 
                         public void onReady(@NonNull Uri contentUri) {
-                            CarIcon icon = new CarIcon.Builder(
-                                    IconCompat.createWithContentUri(contentUri))
-                                    .build();
-                            builder.setImage(icon);
-                            invalidate();
+                            // Rebuild template now that we have the bitmap
+                            try {
+                                template = buildTemplate(ctx, payloadJson);
+                                getScreenManager().replace(ListViewScreen.this);
+                            } catch (JSONException ignored) { }
                         }
                     });
                     break;
