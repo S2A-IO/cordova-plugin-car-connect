@@ -58,7 +58,6 @@ import java.util.List;
 public class ListViewScreen extends Screen {
 
     private final ListTemplate template;
-    private final CallbackContext jsCallback;
 
     /**
      * Builds a {@link ListViewScreen} from the items JSON.
@@ -70,8 +69,7 @@ public class ListViewScreen extends Screen {
     public ListViewScreen(@NonNull CarContext ctx, @NonNull JSONObject payload,
                           @NonNull CallbackContext cb) throws JSONException {
         super(ctx);
-        this.jsCallback = cb;
-        this.template = buildTemplate(ctx, payload);
+        this.template = buildTemplate(ctx, payload, cb);
     }
 
     @NonNull
@@ -84,7 +82,7 @@ public class ListViewScreen extends Screen {
     //  Helpers
     // ------------------------------------------------------------------
 
-    private static ListTemplate buildTemplate(CarContext ctx, JSONObject payload,
+    private ListTemplate buildTemplate(CarContext ctx, JSONObject payload,
                                               CallbackContext cb) throws JSONException {
         JSONArray arr = payload.optJSONArray("items");
         if (arr == null || arr.length() == 0) {
@@ -96,7 +94,7 @@ public class ListViewScreen extends Screen {
 
         for (int i = 0; i < arr.length(); i++) {
             JSONObject item = arr.getJSONObject(i);
-            Row row = buildRow(item, cb);
+            Row row = buildRow(ctx, item, cb);
             rows.add(row);
         }
 
@@ -117,7 +115,7 @@ public class ListViewScreen extends Screen {
      * asynchronously; when ready we rebuild the ListTemplate and call
      * {@link #invalidate()} so the UI refreshes.
      */
-    private static Row buildRow(JSONObject item, CallbackContext cb) throws JSONException {
+    private Row buildRow(CarContext ctx, JSONObject item, CallbackContext cb) throws JSONException {
         final String title = item.optString("title", "");
         final String desc  = item.optString("description", "");
         final String img   = item.optString("image", null);
@@ -136,16 +134,12 @@ public class ListViewScreen extends Screen {
                 case "https":
                     // Asynchronously download, then refresh
                     ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
-                        @Override public void onReady(@NonNull Uri contentUri) {
+                        @Override 
+                        public void onReady(@NonNull Uri contentUri) {
                             CarIcon icon = new CarIcon.Builder(
                                     IconCompat.createWithContentUri(contentUri))
                                     .build();
                             builder.setImage(icon);
-                            // Re-create template with updated rows
-                            try {
-                                template = buildTemplate(ctx, new JSONObject()
-                                        .put("items", item.getJSONArray("items")), cb);
-                            } catch (JSONException ignored) { }
                             invalidate();
                         }
                     });

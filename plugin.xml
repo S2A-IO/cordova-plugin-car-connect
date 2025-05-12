@@ -31,16 +31,19 @@
         <!-- Java source (kept in src/android/io/s2a/connect/…) -->
         <source-file src="src/android/AllowedHost.java"
                      target-dir="src/io/s2a/connect" />
+        <source-file src="src/android/CallbackRegistry.java"
+                     target-dir="src/io/s2a/connect" />
         <source-file src="src/android/CarConnect.java"
                      target-dir="src/io/s2a/connect" />
         <source-file src="src/android/CarConnectService.java"
                      target-dir="src/io/s2a/connect" />
-        <source-file src="src/android/ListViewScreen.java"
-                     target-dir="src/io/s2a/connect" />
         <source-file src="src/android/DetailViewScreen.java"
                      target-dir="src/io/s2a/connect" />
-        <source-file src="src/android/CallbackRegistry.java"
+        <source-file src="src/android/ImageCacheProvider.java"
                      target-dir="src/io/s2a/connect" />
+        <source-file src="src/android/ListViewScreen.java"
+                     target-dir="src/io/s2a/connect" />
+        
 
         <!-- Copy resource files. -->
         <resource-file src="src/android/res/xml/car_app_desc.xml"
