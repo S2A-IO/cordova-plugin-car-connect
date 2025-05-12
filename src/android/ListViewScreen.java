@@ -49,10 +49,16 @@ import java.util.List;
 
 /**
  * Screen responsible for displaying a list of rows.
+ * ──────────────────────────────────────────────────────────────────────────
+ * • Accepts https:// images – they’re downloaded once via {@link ImageCacheProvider},
+ *   turned into a content:// URI, then injected into the row and the template
+ *   is refreshed with {@link #invalidate()}.
+ * • Local resource / file / content-scheme URIs are still used directly.
  */
 public class ListViewScreen extends Screen {
 
     private final ListTemplate template;
+    private final CallbackContext jsCallback;
 
     /**
      * Builds a {@link ListViewScreen} from the items JSON.
@@ -64,7 +70,8 @@ public class ListViewScreen extends Screen {
     public ListViewScreen(@NonNull CarContext ctx, @NonNull JSONObject payload,
                           @NonNull CallbackContext cb) throws JSONException {
         super(ctx);
-        this.template = buildTemplate(ctx, payload, cb);
+        this.jsCallback = cb;
+        this.template = buildTemplate(ctx, payload);
     }
 
     @NonNull
@@ -105,6 +112,11 @@ public class ListViewScreen extends Screen {
                 .build();
     }
 
+    /**
+     * Builds a single row. If the "image" is https:// it is downloaded
+     * asynchronously; when ready we rebuild the ListTemplate and call
+     * {@link #invalidate()} so the UI refreshes.
+     */
     private static Row buildRow(JSONObject item, CallbackContext cb) throws JSONException {
         final String title = item.optString("title", "");
         final String desc  = item.optString("description", "");
@@ -116,11 +128,42 @@ public class ListViewScreen extends Screen {
                 .setOnClickListener(() -> cb.success(item.toString()));
 
         if (img != null && !img.isEmpty()) {
-            CarIcon icon = new CarIcon.Builder(
-                    IconCompat.createWithContentUri(Uri.parse(img)))
-                    .build();
-            builder.setImage(icon);
+            Uri uri = Uri.parse(img);
+            String scheme = uri.getScheme() == null ? "" : uri.getScheme();
+
+            switch (scheme) {
+                case "http":
+                case "https":
+                    // Asynchronously download, then refresh
+                    ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
+                        @Override public void onReady(@NonNull Uri contentUri) {
+                            CarIcon icon = new CarIcon.Builder(
+                                    IconCompat.createWithContentUri(contentUri))
+                                    .build();
+                            builder.setImage(icon);
+                            // Re-create template with updated rows
+                            try {
+                                template = buildTemplate(ctx, new JSONObject()
+                                        .put("items", item.getJSONArray("items")), cb);
+                            } catch (JSONException ignored) { }
+                            invalidate();
+                        }
+                    });
+                    break;
+
+                case "file":
+                case "content":
+                case "android.resource":
+                    CarIcon icon = new CarIcon.Builder(
+                            IconCompat.createWithContentUri(uri)).build();
+                    builder.setImage(icon);
+                    break;
+
+                default:
+                    // Unsupported scheme – leave row without image
+            }
         }
+
         return builder.build();
     }
 }

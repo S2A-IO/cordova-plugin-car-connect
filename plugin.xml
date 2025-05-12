@@ -42,8 +42,13 @@
         <source-file src="src/android/CallbackRegistry.java"
                      target-dir="src/io/s2a/connect" />
 
+        <!-- Copy resource files. -->
         <resource-file src="src/android/res/xml/car_app_desc.xml"
                      target="res/xml/car_app_desc.xml" />
+
+        <resource-file
+            src="src/android/res/xml/carconnect_image_paths.xml"
+            target="res/xml/carconnect_image_paths.xml"/>
 
         <!-- Android-Auto dependency (Jetpack Car-App) -->
         <framework src="androidx.car.app:app:1.4.0"
@@ -71,6 +76,17 @@
                     <category android:name="androidx.car.app.category.IOT" />
                 </intent-filter>
             </service>
+
+            <!-- Declare the FileProvider we used to download and server the images. -->
+            <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="${applicationId}.carconnect.images"
+                android:exported="false"
+                android:grantUriPermissions="true">
+                <meta-data
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/carconnect_image_paths" />
+            </provider>
 
             <!-- Mark as car-app so Play Services validates -->
             <meta-data android:name="androidx.car.app.minCarApiLevel"
