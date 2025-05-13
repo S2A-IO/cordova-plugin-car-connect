@@ -29,6 +29,7 @@
 package io.s2a.connect;
 
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.car.app.CarContext;
@@ -57,7 +58,7 @@ import java.util.List;
  */
 public class ListViewScreen extends Screen {
     private static final String TAG = "CarConnect.ListScreen";
-    
+
     private final JSONObject payloadJson;
     private ListTemplate template;
 
