@@ -120,6 +120,7 @@
         <!-- Swift source -->
         <source-file src="src/ios/CarConnect.swift"     />
         <source-file src="src/ios/CarConnectService.swift" />
+        <source-file src="src/ios/PhoneSceneDelegate.swift" />
         <source-file src="src/ios/SceneDelegate.swift" />
 
         <!-- CarPlay framework (system-supplied) -->
@@ -137,8 +138,29 @@
         <!-- CarPlay Scene configuration -->
         <config-file target="*-Info.plist" parent="UIApplicationSceneManifest">
             <dict>
+                <key>UIApplicationSupportsMultipleScenes</key>
+                <true/>
+                
                 <key>UISceneConfigurations</key>
                 <dict>
+                    <!-- Scene for iPhone-->
+                    <key>UIWindowSceneSessionRoleApplication</key>
+                    <array>
+                        <dict>
+                            <!-- Standard window scene -->
+                            <key>UISceneClassName</key>
+                            <string>UIWindowScene</string>
+
+                            <!-- Your handset delegate -->
+                            <key>UISceneDelegateClassName</key>
+                            <string>$(PRODUCT_MODULE_NAME).PhoneSceneDelegate</string>
+
+                            <!-- Optional, descriptive -->
+                            <key>UISceneConfigurationName</key>
+                            <string>iPhone Configuration</string>
+                        </dict>
+                    </array>
+
                     <!-- CarPlay template scene (list / audio / parking, etc.) -->
                     <key>CPTemplateApplicationSceneSessionRoleApplication</key>
                     <array>
