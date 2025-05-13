@@ -47,8 +47,6 @@ import org.json.JSONException;
 import java.util.ArrayList;
 import java.util.List;
 
-private static final String TAG = "CarConnect.ListScreen";
-
 /**
  * Screen responsible for displaying a list of rows.
  * ──────────────────────────────────────────────────────────────────────────
@@ -58,7 +56,8 @@ private static final String TAG = "CarConnect.ListScreen";
  * • Local resource / file / content-scheme URIs are still used directly.
  */
 public class ListViewScreen extends Screen {
-
+    private static final String TAG = "CarConnect.ListScreen";
+    
     private final JSONObject payloadJson;
     private ListTemplate template;
 
@@ -163,7 +162,7 @@ public class ListViewScreen extends Screen {
                 case "content":
                 case "android.resource":
                     Log.d(TAG, "local image: " + img);
-                    
+
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
                     builder.setImage(icon, Row.IMAGE_TYPE_LARGE);
