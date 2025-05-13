@@ -4,7 +4,6 @@
  * Copyright © 2025 RIKSOF. MIT License.
  */
 import UIKit
-import Cordova
 
 @available(iOS 14.0, *)
 class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
