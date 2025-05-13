@@ -141,7 +141,7 @@ public class ListViewScreen extends Screen {
                             // Rebuild template now that we have the bitmap
                             try {
                                 template = buildTemplate(ctx, payloadJson, cb);
-                                getScreenManager().replace(ListViewScreen.this);
+                                ListViewScreen.this.getScreenManager().replace(ListViewScreen.this);
                             } catch (JSONException ignored) { }
                         }
                     });
