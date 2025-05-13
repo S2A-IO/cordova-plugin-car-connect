@@ -146,7 +146,7 @@ public class ListViewScreen extends Screen {
 
                             CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(contentUri)).build();
-                            builder.setImage(icon, Row.IMAGE_TYPE_LARGE);
+                            builder.setImage(icon, Row.IMAGE_TYPE_ICON);
 
                             try {
                                 // rebuild template now that at least one image is cached
@@ -166,7 +166,7 @@ public class ListViewScreen extends Screen {
 
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
-                    builder.setImage(icon, Row.IMAGE_TYPE_LARGE);
+                    builder.setImage(icon, Row.IMAGE_TYPE_ICON);
                     break;
 
                 default:
