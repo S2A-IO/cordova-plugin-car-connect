@@ -47,6 +47,8 @@ import org.json.JSONException;
 import java.util.ArrayList;
 import java.util.List;
 
+private static final String TAG = "CarConnect.ListScreen";
+
 /**
  * Screen responsible for displaying a list of rows.
  * ──────────────────────────────────────────────────────────────────────────
@@ -134,10 +136,14 @@ public class ListViewScreen extends Screen {
             switch (scheme) {
                 case "http":
                 case "https":
+                    Log.d(TAG, "remote image: " + img);
+
                     // Asynchronously download, then refresh
                     ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
                         @Override 
                         public void onReady(@NonNull Uri contentUri) {
+                            Log.d(TAG, "icon ready: " + contentUri);
+
                             CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(contentUri)).build();
                             builder.setImage(icon, Row.IMAGE_TYPE_LARGE);
@@ -156,6 +162,8 @@ public class ListViewScreen extends Screen {
                 case "file":
                 case "content":
                 case "android.resource":
+                    Log.d(TAG, "local image: " + img);
+                    
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
                     builder.setImage(icon, Row.IMAGE_TYPE_LARGE);

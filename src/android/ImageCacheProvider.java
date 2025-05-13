@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+private static final String TAG = "CarConnect.ImageCache";
+
 /**
  * Utility to fetch a remote image <https://…> and expose it as a
  * content:// URI via FileProvider.  Intended for Car-App list rows.
@@ -42,12 +44,19 @@ public final class ImageCacheProvider {
 
     /** Asynchronously download + cache the image, then invoke the callback. */
     public static void fetch(Context ctx, String httpsUrl, Callback cb) {
+        Log.d(TAG, "fetch → " + httpsUrl);
+
         new Thread(() -> {
             try {
                 Uri uri = downloadToCache(ctx, httpsUrl);
+
+                Log.d(TAG, "→ downloaded & cached: " + uri);
+
                 // Post result back to main thread for UI updates
                 new Handler(Looper.getMainLooper()).post(() -> cb.onReady(uri));
             } catch (Exception e) {
+                Log.e(TAG, "download failed: " + httpsUrl, e);
+                
                 new Handler(Looper.getMainLooper()).post(() -> cb.onError(e));
             }
         }).start();
