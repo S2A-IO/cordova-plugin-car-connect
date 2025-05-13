@@ -96,18 +96,23 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
-        var listItems = [CPListItem]()
-        for itm in items {
-            let li = CPListItem(text: itm["title"] as? String ?? "",
-                                detailText: itm["description"] as? String ?? "")
+        // Build the new section
+        let section = CPListSection(items: items.map {
+            let li = CPListItem(text: $0["title"] as? String ?? "",
+                            detailText: $0["description"] as? String ?? "")
             li.handler = { _, _ in
-                if
-                  let data = try? JSONSerialization.data(withJSONObject: itm),
-                  let json = String(data: data, encoding: .utf8) {
+                if let data = try? JSONSerialization.data(withJSONObject: $0),
+                let json = String(data: data, encoding: .utf8) {
                     CarConnect.emitListItemTapped(json)
                 }
             }
-            listItems.append(li)
+            return li
+        })
+
+        // If the top template is already a list, just update its sections
+        if let current = iface.topTemplate as? CPListTemplate {
+            current.updateSections([section])
+            return
         }
 
         let listTpl = CPListTemplate(title: "Select an item",
