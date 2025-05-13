@@ -122,7 +122,7 @@ public class ListViewScreen extends Screen {
         final String desc  = item.optString("description", "");
         final String img   = item.optString("image", null);
 
-        Row.Builder builder = new Row.Builder()
+        final Row.Builder builder = new Row.Builder()
                 .setTitle(title)
                 .addText(desc)
                 .setOnClickListener(() -> cb.success(item.toString()));
@@ -140,7 +140,7 @@ public class ListViewScreen extends Screen {
                         public void onReady(@NonNull Uri contentUri) {
                             CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(contentUri)).build();
-                            builder.setImage(icon);
+                            builder.setImage(icon, Row.IMAGE_TYPE_LARGE);
 
                             try {
                                 // rebuild template now that at least one image is cached
@@ -158,7 +158,7 @@ public class ListViewScreen extends Screen {
                 case "android.resource":
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
-                    builder.setImage(icon);
+                    builder.setImage(icon, Row.IMAGE_TYPE_LARGE);
                     break;
 
                 default:
