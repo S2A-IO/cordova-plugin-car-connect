@@ -138,11 +138,17 @@ public class ListViewScreen extends Screen {
                     ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
                         @Override 
                         public void onReady(@NonNull Uri contentUri) {
-                            // Rebuild template now that we have the bitmap
+                            CarIcon icon = new CarIcon.Builder(
+                            IconCompat.createWithContentUri(contentUri)).build();
+                            builder.setImage(icon);
+
                             try {
-                                template = buildTemplate(ctx, payloadJson, cb);
-                                ListViewScreen.this.getScreenManager().replace(ListViewScreen.this);
+                                // rebuild template now that at least one image is cached
+                                template = ListViewScreen.this.buildTemplate(ctx, payloadJson, cb);
                             } catch (JSONException ignored) { }
+
+                            // ask the framework to re-query onGetTemplate()
+                            ListViewScreen.this.invalidate();
                         }
                     });
                     break;
