@@ -96,12 +96,15 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
-        // Build the new section
-        let section = CPListSection(items: items.map {
-            let li = CPListItem(text: $0["title"] as? String ?? "",
-                            detailText: $0["description"] as? String ?? "")
+        // Build section
+        let section = CPListSection(items: items.map { item in
+            let li = CPListItem(
+                text: item["title"] as? String ?? "",
+                detailText: item["description"] as? String ?? ""
+            )
             li.handler = { _, _ in
-                if let data = try? JSONSerialization.data(withJSONObject: $0),
+                if
+                let data = try? JSONSerialization.data(withJSONObject: item),
                 let json = String(data: data, encoding: .utf8) {
                     CarConnect.emitListItemTapped(json)
                 }
@@ -109,16 +112,18 @@ class CarConnectService: NSObject {
             return li
         })
 
-        // If the top template is already a list, just update its sections
+        // If a list is already on top, just refresh its contents
         if let current = iface.topTemplate as? CPListTemplate {
             current.updateSections([section])
             return
         }
 
+        // Otherwise reset the stack with this list as the new root
         let listTpl = CPListTemplate(title: "Select an item",
-                                     sections: [CPListSection(items: listItems)])
-        iface.pushTemplate(listTpl, animated: true)
+                                 sections: [section])
+        iface.setRootTemplate(listTpl, animated: true)
     }
+
 
     // MARK: - Show detail view ------------------------------------------
     @objc private func handleShowDetailView(_ note: Notification) {
