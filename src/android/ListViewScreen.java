@@ -140,7 +140,7 @@ public class ListViewScreen extends Screen {
                         public void onReady(@NonNull Uri contentUri) {
                             // Rebuild template now that we have the bitmap
                             try {
-                                template = buildTemplate(ctx, payloadJson);
+                                template = buildTemplate(ctx, payloadJson, cb);
                                 getScreenManager().replace(ListViewScreen.this);
                             } catch (JSONException ignored) { }
                         }
