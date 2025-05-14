@@ -22,6 +22,11 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Utility to fetch a remote image <https://…> and expose it as a
  * content:// URI via FileProvider.  Intended for Car-App list rows.
@@ -31,6 +36,7 @@ import java.net.URL;
  *         new CarIcon.Builder(IconCompat.createWithContentUri(uri)).build()));
  */
 public final class ImageCacheProvider {
+    private static final Map<String, List<Callback>> inFlight = new HashMap<>();
     private static final String TAG = "CarConnect.ImageCache";
 
     public interface Callback {
@@ -46,18 +52,32 @@ public final class ImageCacheProvider {
     public static void fetch(Context ctx, String httpsUrl, Callback cb) {
         Log.d(TAG, "fetch → " + httpsUrl);
 
+        synchronized (inFlight) {
+            // somebody else already started the download → just queue our callback
+            if (inFlight.containsKey(url)) {
+                inFlight.get(url).add(cb);
+                return;
+            }
+            inFlight.put(url, new ArrayList<>(List.of(cb)));
+        }
+
         new Thread(() -> {
-            try {
-                Uri uri = downloadToCache(ctx, httpsUrl);
+            Uri uri = null; Exception err = null;
+            try { uri = downloadToCache(ctx, url); }
+            catch (Exception e) { err = e; }
 
-                Log.d(TAG, "→ downloaded & cached: " + uri);
+            Log.d(TAG, "→ downloaded & cached: " + uri);
 
-                // Post result back to main thread for UI updates
-                new Handler(Looper.getMainLooper()).post(() -> cb.onReady(uri));
-            } catch (Exception e) {
-                Log.e(TAG, "download failed: " + httpsUrl, e);
-
-                new Handler(Looper.getMainLooper()).post(() -> cb.onError(e));
+            // deliver the result to *all* waiting callbacks
+            List<Callback> cbs;
+            synchronized (inFlight) { cbs = inFlight.remove(url); }
+            Handler h = new Handler(Looper.getMainLooper());
+            for (Callback c : cbs) {
+                Uri finalUri = uri; Exception finalErr = err;
+                h.post(() -> {
+                    if (finalErr == null) c.onReady(finalUri);
+                    else                  c.onError(finalErr);
+                });
             }
         }).start();
     }
@@ -66,6 +86,14 @@ public final class ImageCacheProvider {
     // Internal helpers
     // ------------------------------------------------------------------ //
     private static Uri downloadToCache(Context ctx, String urlStr) throws Exception {
+        String fileName = Integer.toHexString(urlStr.hashCode()) + ".img";
+        File cacheFile  = new File(ctx.getCacheDir(), fileName);
+
+        if (cacheFile.exists()) {               // <-- fast path
+            String authority = ctx.getPackageName() + AUTHORITY_SUFFIX;
+            return FileProvider.getUriForFile(ctx, authority, cacheFile);
+        }
+
         URL url = new URL(urlStr);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setConnectTimeout(8000);
