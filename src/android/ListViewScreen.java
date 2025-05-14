@@ -144,16 +144,26 @@ public class ListViewScreen extends Screen {
                         public void onReady(@NonNull Uri contentUri) {
                             Log.d(TAG, "icon ready: " + contentUri);
 
-                            CarIcon icon = new CarIcon.Builder(
-                            IconCompat.createWithContentUri(contentUri)).build();
-                            builder.setImage(icon, Row.IMAGE_TYPE_ICON);
+                            try (InputStream is =
+                                     ctx.getContentResolver().openInputStream(contentUri)) {
+                                if (is != null) {
+                                    Bitmap bmp = BitmapFactory.decodeStream(is);
+                                    if (bmp != null) {
+                                        CarIcon icon = new CarIcon.Builder(
+                                            IconCompat.createWithBitmap(bmp)).build();
+                                        builder.setImage(icon, Row.IMAGE_TYPE_ICON);
+                                    }
+                                }
+                            } catch (Exception e) {
+                                Log.w(TAG, "Failed to decode downloaded image", e);
+                            }
 
+                            // Rebuild the template now that (at least) one image is ready
                             try {
-                                // rebuild template now that at least one image is cached
                                 template = ListViewScreen.this.buildTemplate(ctx, payloadJson, cb);
                             } catch (JSONException ignored) { }
 
-                            // ask the framework to re-query onGetTemplate()
+                            // Ask the framework to re-query onGetTemplate()
                             ListViewScreen.this.invalidate();
                         }
                     });
