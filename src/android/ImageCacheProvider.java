@@ -49,8 +49,8 @@ public final class ImageCacheProvider {
     private ImageCacheProvider() { }
 
     /** Asynchronously download + cache the image, then invoke the callback. */
-    public static void fetch(Context ctx, String httpsUrl, Callback cb) {
-        Log.d(TAG, "fetch → " + httpsUrl);
+    public static void fetch(Context ctx, String url, Callback cb) {
+        Log.d(TAG, "fetch → " + url);
 
         synchronized (inFlight) {
             // somebody else already started the download → just queue our callback
@@ -103,9 +103,6 @@ public final class ImageCacheProvider {
         if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
             throw new Exception("HTTP " + con.getResponseCode());
         }
-
-        String fileName = Integer.toHexString(urlStr.hashCode()) + ".img";
-        File cacheFile  = new File(ctx.getCacheDir(), fileName);
 
         try (InputStream in = con.getInputStream();
              FileOutputStream out = new FileOutputStream(cacheFile)) {

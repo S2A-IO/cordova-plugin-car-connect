@@ -60,9 +60,7 @@ public class DetailViewScreen extends Screen {
     // ------------------------------------------------------------------
 
     private static PaneTemplate buildTemplate(JSONObject payload, CallbackContext cb) throws JSONException {
-        JSONArray pairsArr   = payload.optJSONArray("pairs");
-        JSONArray buttonsArr = payload.optJSONArray("buttons");
-
+        JSONArray pairsArr = payload.optJSONArray("pairs");
         if (pairsArr == null || pairsArr.length() == 0) {
             throw new JSONException("pairs array missing or empty in showDetailView payload");
         }
@@ -95,16 +93,15 @@ public class DetailViewScreen extends Screen {
             }
         }
 
-        PaneTemplate.Builder tmpl = new PaneTemplate.Builder(pane.build())
-            .setTitle("Details")
-            .setHeaderAction(Action.BACK);
-
         if (primary != null) {
-            tmpl.setPrimaryAction(primary);
+            pane.addAction(primary);             // put primary in the Pane
         }
-        tmpl.setActionStrip(strip.build());
 
-        return tmpl.build();
+        return new PaneTemplate.Builder(pane.build())
+            .setTitle("Details")
+            .setHeaderAction(Action.BACK)
+            .setActionStrip(strip.build())
+            .build();
     }
 
     private static Action buildAction(JSONObject btn, CallbackContext cb) {
