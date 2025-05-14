@@ -52,6 +52,15 @@ public final class ImageCacheProvider {
     public static void fetch(Context ctx, String url, Callback cb) {
         Log.d(TAG, "fetch → " + url);
 
+        File cacheFile = new File(ctx.getCacheDir(),
+                          Integer.toHexString(url.hashCode()) + ".img");
+        if (cacheFile.exists()) {                      // ← quick exit
+            Uri uri = FileProvider.getUriForFile(
+                 ctx, ctx.getPackageName() + AUTHORITY_SUFFIX, cacheFile);
+            new Handler(Looper.getMainLooper()).post(() -> cb.onReady(uri));
+            return;
+        }
+
         synchronized (inFlight) {
             // somebody else already started the download → just queue our callback
             if (inFlight.containsKey(url)) {
