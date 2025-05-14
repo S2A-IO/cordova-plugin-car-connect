@@ -68,50 +68,56 @@ public class DetailViewScreen extends Screen {
         }
 
         // Build rows for each key/value.
-        Pane.Builder paneBuilder = new Pane.Builder();
+        Pane.Builder pane = new Pane.Builder();
         for (int i = 0; i < pairsArr.length(); i++) {
             JSONObject p = pairsArr.getJSONObject(i);
-            String key   = p.optString("key", "");
-            String value = p.optString("value", "");
-            Row row = new Row.Builder()
-                    .setTitle(key)
-                    .addText(value)
-                    .build();
-            paneBuilder.addRow(row);
+            pane.addRow(new Row.Builder()
+                .setTitle(p.optString("key", ""))
+                .addText(p.optString("value", ""))
+                .build());
         }
 
         // Build up to two actions
-        ActionStrip.Builder actionStripBuilder = new ActionStrip.Builder();
+        Action  primary = null;
+        ActionStrip.Builder strip = new ActionStrip.Builder();
+
+        JSONArray buttonsArr = payload.optJSONArray("buttons");
         if (buttonsArr != null) {
-            for (int i = 0; i < Math.min(2, buttonsArr.length()); i++) {
+            for (int i = 0; i < buttonsArr.length(); i++) {
                 JSONObject b = buttonsArr.getJSONObject(i);
-                actionStripBuilder.addAction(buildAction(b, cb));
+                Action a = buildAction(b, cb);
+
+                if ("primary".equalsIgnoreCase(b.optString("type")) && primary == null) {
+                    primary = a;                 // first “primary” wins
+                } else {
+                    strip.addAction(a);          // all others go to the strip
+                }
             }
         }
 
-        return new PaneTemplate.Builder(paneBuilder.build())
-                .setTitle("Details")
-                .setActionStrip(actionStripBuilder.build())
-                .setHeaderAction(Action.BACK)
-                .build();
+        PaneTemplate.Builder tmpl = new PaneTemplate.Builder(pane.build())
+            .setTitle("Details")
+            .setHeaderAction(Action.BACK);
+
+        if (primary != null) {
+            tmpl.setPrimaryAction(primary);
+        }
+        tmpl.setActionStrip(strip.build());
+
+        return tmpl.build();
     }
 
     private static Action buildAction(JSONObject btn, CallbackContext cb) {
-        String id   = btn.optString("id", "");
         String text = btn.optString("text", "Button");
-        String type = btn.optString("type", "secondary");
 
         Action.Builder builder = new Action.Builder()
-                .setTitle(text)
-                .setOnClickListener(() -> {
-                    PluginResult pr = new PluginResult(PluginResult.Status.OK, btn.toString());
-                    pr.setKeepCallback(true);
-                    cb.sendPluginResult(pr);
-                });
+            .setTitle(text)
+            .setOnClickListener(() -> {
+                PluginResult pr = new PluginResult(PluginResult.Status.OK, btn.toString());
+                pr.setKeepCallback(true);
+                cb.sendPluginResult(pr);
+            });
 
-        if ("primary".equalsIgnoreCase(type)) {
-            builder.setFlags(Action.FLAG_PRIMARY);
-        }
         return builder.build();
     }
 }
