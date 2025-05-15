@@ -94,7 +94,8 @@ class CarConnectService: NSObject {
     }
 
     // MARK: - Show list view --------------------------------------------
-    @objc private func handleShowListView(_ note: Notification) {
+    @objc
+    private func handleShowListView(_ note: Notification) {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
             let items   = payload["items"] as? [[String: Any]],
@@ -103,42 +104,53 @@ class CarConnectService: NSObject {
 
         let listTitle = payload["title"] as? String ?? "Select an item"
 
-        // Build the list section
+        // Build the section
         let section = CPListSection(items: items.map { item in
             let li = CPListItem(
-                text:        item["title"] as? String ?? "",
-                detailText:  item["description"] as? String ?? ""
+                text:       item["title"]       as? String ?? "",
+                detailText: item["description"] as? String ?? ""
             )
 
-            // (Optional) immediate placeholder so the row isn’t empty.
-            li.image = UIImage(systemName: "photo")
+            // 1. Placeholder
+            li.image = UIImage(systemName: "photo.on.rectangle")
 
-            // Asynchronously pull real artwork
-            if let urlString = item["image"] as? String,
-            let url       = URL(string: urlString) {
-                ImageCacheProvider.shared.fetch(url) { [weak li] img in
-                    guard let img = img else { return }
-                    li?.image = img
+            // 2. Resolve the image
+            if let raw = item["image"] as? String, !raw.isEmpty {
+                if let url = URL(string: raw), url.scheme != nil {
+                    // Remote or file:// URL ➜ fetch & cache
+                    ImageCacheProvider.shared.fetch(url) { [weak li] img in
+                        guard let img else { return }
+                        DispatchQueue.main.async {
+                            li?.image = img                // safe on main thread
+                        }
+                    }
+                } else if let bundleImg = UIImage(named: raw) {
+                    li.image = bundleImg                 //  asset name in bundle
                 }
             }
 
-            // Tap-handler → relay JSON back to JS layer
+            // 3. Tap-handler
             li.handler = { _, _ in
-                if
+                guard
                     let data = try? JSONSerialization.data(withJSONObject: item),
-                    let json = String(data: data, encoding: .utf8) {
-                    CarConnect.emitListItemTapped(json)
-                }
+                    let json = String(data: data, encoding: .utf8)
+                else { return }
+                CarConnect.emitListItemTapped(json)
             }
             return li
         })
 
-        // Re-use or push the list template
-        let listTpl = CPListTemplate(title: listTitle, sections: [section])
-        iface.setRootTemplate(listTpl, animated: true, completion: nil)
+        // Re-use template if it’s already on screen
+        if let current = iface.topTemplate as? CPListTemplate {
+            current.updateSections([section])
+            if current.title != listTitle { current.title = listTitle }
+            return
+        }
+
+        // Otherwise make it the new root
+        let tpl = CPListTemplate(title: listTitle, sections: [section])
+        iface.setRootTemplate(tpl, animated: true, completion: nil)
     }
-
-
 
     // MARK: - Show detail view ------------------------------------------
     @objc private func handleShowDetailView(_ note: Notification) {
