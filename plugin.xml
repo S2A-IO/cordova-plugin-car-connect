@@ -132,7 +132,12 @@
         <!-- Optional: expose the same startup text in Info.plist so you can
              reference it from native code if desired. -->
         <config-file target="*-Info.plist" parent="CarConnectStartup">
-            <string>$CAR_CONNECT_STARTUP_MESSAGE</string>
+            <dict>
+                <key>Title</key>
+                <string>$CAR_CONNECT_STARTUP_TITLE</string>      <!-- defaults to “Car Connect” -->
+                <key>Message</key>
+                <string>$CAR_CONNECT_STARTUP_MESSAGE</string>    <!-- defaults to “CarConnect plugin ready.… ” -->
+            </dict>
         </config-file>
 
         <!-- CarPlay Scene configuration -->

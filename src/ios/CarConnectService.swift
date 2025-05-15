@@ -70,9 +70,14 @@ class CarConnectService: NSObject {
 
     // MARK: - Placeholder template --------------------------------------
     private func placeholderTemplate() -> CPTemplate {
-        let item    = CPListItem(text: "Open the app on your phone.", detailText: nil)
+        // Values injected via plugin.xml → Info.plist
+        let startup  = Bundle.main.object(forInfoDictionaryKey: "CarConnectStartup") as? [String: Any]
+        let title    = startup?["Title"]   as? String ?? "Car Connect"
+        let message  = startup?["Message"] as? String ?? "Open the app on your phone."
+
+        let item    = CPListItem(text: message, detailText: nil)
         let section = CPListSection(items: [item])
-        return CPListTemplate(title: "Car Connect", sections: [section])
+        return CPListTemplate(title: title, sections: [section])
     }
 
     // MARK: - Notification wiring ---------------------------------------
