@@ -170,7 +170,7 @@ class CarConnectService: NSObject {
             }
         }
 
-    l   et pane = CPInformationTemplate(title: title,
+        let pane = CPInformationTemplate(title: title,
                                      layout: .leading,
                                      items: rows,
                                      actions: actions)
