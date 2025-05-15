@@ -111,14 +111,14 @@ class CarConnectService: NSObject {
             )
 
             // (Optional) immediate placeholder so the row isn’t empty.
-            li.setImage(UIImage(systemName: "photo"), for: .leading)        // SF Symbol; pick what you like
+            li.image = UIImage(systemName: "photo")
 
             // Asynchronously pull real artwork
             if let urlString = item["image"] as? String,
             let url       = URL(string: urlString) {
                 ImageCacheProvider.shared.fetch(url) { [weak li] img in
                     guard let img = img else { return }
-                    li?.setImage(img, for: .leading)   // CarPlay refreshes the row automatically (iOS 14+)
+                    li?.image = img
                 }
             }
 
