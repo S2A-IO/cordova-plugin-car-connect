@@ -101,6 +101,9 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
+        // Title sent from JS; fall back to a sensible default
+        let listTitle = payload["title"] as? String ?? "Select an item"
+
         // Build section
         let section = CPListSection(items: items.map { item in
             let li = CPListItem(
@@ -120,11 +123,15 @@ class CarConnectService: NSObject {
         // If a list is already on top, just refresh its contents
         if let current = iface.topTemplate as? CPListTemplate {
             current.updateSections([section])
+            //  Update title if it changed (iOS 14+: `title` is writable)
+            if current.title != listTitle {
+                current.title = listTitle
+            }
             return
         }
 
         // Otherwise reset the stack with this list as the new root
-        let listTpl = CPListTemplate(title: "Select an item",
+        let listTpl = CPListTemplate(title: listTitle,
                                  sections: [section])
         iface.setRootTemplate(listTpl, animated: true)
     }
@@ -138,6 +145,9 @@ class CarConnectService: NSObject {
             let buttons = payload["buttons"] as? [[String: Any]],
             let iface   = interfaceController
         else { return }
+
+        // Title sent from JS; fall back to a sensible default
+        let title = payload["title"] as? String ?? "Details"
 
         // Rows
         var rows = [CPInformationItem]()
@@ -164,7 +174,7 @@ class CarConnectService: NSObject {
             actions.append(btn)
         }
 
-        let pane = CPInformationTemplate(title: "Details",
+        let pane = CPInformationTemplate(title: title,
                                          layout: .leading,
                                          items: rows,
                                          actions: actions)

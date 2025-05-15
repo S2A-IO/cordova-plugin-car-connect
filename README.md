@@ -72,7 +72,7 @@ CarConnect.isConnected().then(state => {
 });
 
 // Show a selectable list
-CarConnect.showListView([
+CarConnect.showListView('Screen title', [
   {
     id: 1,
     image: 'file:///android_asset/icon.png', // optional for Android Auto
@@ -87,6 +87,7 @@ CarConnect.showListView([
 
 // Show a detail pane with buttons
 CarConnect.showDetailView(
+  'Screen title',
   [
     { key: 'Artist', value: 'Hans Zimmer' },
     { key: 'Album',  value: 'Dune (OST)' },

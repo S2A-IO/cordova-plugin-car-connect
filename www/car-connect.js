@@ -46,11 +46,13 @@ function execNative(action, payload, ok, fail) {
  * Displays a list UI with image, title, and description.
  *
  * ```js
- * CarConnect.showListView([
+ * CarConnect.showListView('Screen title', [
  *   { id: 42, image: 'img/spoon.png', title: 'Spoon', description: 'A shiny spoon' }
  * ], item => console.log('Item tapped:', item));
  * ```
  *
+ * @param {String} title
+ *        Title for the CarPlay list screen (shown in the HMI header)
  * @param {Array<{id:string|number, image:string, title:string, description:string}>} items
  *        Data to render. **Must be ≤ 40 items** (typical HMI limit).
  * @param {Function} [onItemTapped]
@@ -59,11 +61,15 @@ function execNative(action, payload, ok, fail) {
  *        Called with an `Error` instance on failure.
  * @throws {TypeError} If `items` is not a non‑empty array.
  */
-function showListView(items, onItemTapped, onError) {
+function showListView(title, items, onItemTapped, onError) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new TypeError('showListView expects a non‑empty array of items');
   }
-  execNative('showListView', { items: items }, onItemTapped, onError);
+  execNative('showListView', 
+    { title: String(title), items: items }, 
+    onItemTapped,
+    onError
+  );
 }
 
 /**
@@ -71,6 +77,7 @@ function showListView(items, onItemTapped, onError) {
  *
  * ```js
  * CarConnect.showDetailView(
+ *   'Screen title',
  *   [
  *     { key: 'Artist', value: 'Hans Zimmer' },
  *     { key: 'Album',  value: 'Dune (OST)' }
@@ -83,6 +90,8 @@ function showListView(items, onItemTapped, onError) {
  * );
  * ```
  *
+ * @param {String} title
+ *        Title for the CarPlay detail view screen (shown in the HMI header)
  * @param {Array<{key:string, value:string}>} pairs
  *        Key/value pairs to render.
  * @param {Array<{id?:string, type:'primary'|'secondary', text:string}>} [buttons=[]]
@@ -93,7 +102,7 @@ function showListView(items, onItemTapped, onError) {
  *        Called with an `Error` instance on failure.
  * @throws {TypeError|RangeError} For invalid arguments.
  */
-function showDetailView(pairs, buttons, onButtonPressed, onError) {
+function showDetailView(title, pairs, buttons, onButtonPressed, onError) {
   if (!Array.isArray(pairs) || pairs.length === 0) {
     throw new TypeError('showDetailView expects a non‑empty array of key/value pairs');
   }
@@ -101,6 +110,7 @@ function showDetailView(pairs, buttons, onButtonPressed, onError) {
     throw new RangeError('showDetailView supports at most two buttons');
   }
   execNative('showDetailView', {
+    title: String(title),
     pairs: pairs,
     buttons: Array.isArray(buttons) ? buttons : []
   }, onButtonPressed, onError);
