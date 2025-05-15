@@ -48,7 +48,7 @@ class CarConnectService: NSObject {
         connectionState          = .carPlay
 
         interfaceController.setRootTemplate(placeholderTemplate(),
-                                            animated: false)
+                                            animated: false, completion: nil)
     }
 
     // For future-proofing you may keep the window variant and forward to
@@ -111,14 +111,14 @@ class CarConnectService: NSObject {
             )
 
             // (Optional) immediate placeholder so the row isn’t empty.
-            li.image = UIImage(systemName: "photo")        // SF Symbol; pick what you like
+            li.setImage(UIImage(systemName: "photo"), for: .leading)        // SF Symbol; pick what you like
 
             // Asynchronously pull real artwork
             if let urlString = item["image"] as? String,
             let url       = URL(string: urlString) {
                 ImageCacheProvider.shared.fetch(url) { [weak li] img in
                     guard let img = img else { return }
-                    li?.image = img        // CarPlay refreshes the row automatically (iOS 14+)
+                    li?.setImage(img, for: .leading)   // CarPlay refreshes the row automatically (iOS 14+)
                 }
             }
 
@@ -134,13 +134,8 @@ class CarConnectService: NSObject {
         })
 
         // Re-use or push the list template
-        if let current = iface.topTemplate as? CPListTemplate {
-            current.updateSections([section])
-            if current.title != listTitle { current.title = listTitle }
-        } else {
-            let listTpl = CPListTemplate(title: listTitle, sections: [section])
-            iface.setRootTemplate(listTpl, animated: true)
-        }
+        let listTpl = CPListTemplate(title: listTitle, sections: [section])
+        iface.setRootTemplate(listTpl, animated: true, completion: nil)
     }
 
 
@@ -154,39 +149,33 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
-        // Title sent from JS; fall back to a sensible default
         let title = payload["title"] as? String ?? "Details"
 
-        // Rows
-        var rows = [CPInformationItem]()
-        for p in pairs {
-            rows.append(CPInformationItem(title: p["key"] as? String ?? "",
-                                          detail: p["value"] as? String ?? ""))
+        let rows = pairs.map {
+            CPInformationItem(title: $0["key"] as? String ?? "",
+                          detail: $0["value"] as? String ?? "")
         }
 
-        // Up to two buttons
-        var actions = [CPTextButton]()
-        for b in buttons.prefix(2) {
+        let actions = buttons.prefix(2).map { b -> CPTextButton in
             let style: CPTextButtonStyle =
                 (b["type"] as? String)?.lowercased() == "primary"
                 ? .confirm : .normal
 
-            let btn = CPTextButton(title: b["text"] as? String ?? "Button",
-                                   textStyle: style) { _ in
-                if
-                  let data = try? JSONSerialization.data(withJSONObject: b),
-                  let json = String(data: data, encoding: .utf8) {
+            return CPTextButton(title: b["text"] as? String ?? "Button",
+                            textStyle: style) { _ in
+                if let data = try? JSONSerialization.data(withJSONObject: b),
+                let json = String(data: data, encoding: .utf8) {
                     CarConnect.emitDetailButtonPressed(json)
                 }
             }
-            actions.append(btn)
         }
 
-        let pane = CPInformationTemplate(title: title,
-                                         layout: .leading,
-                                         items: rows,
-                                         actions: actions)
-        iface.pushTemplate(pane, animated: true)
+    l   et pane = CPInformationTemplate(title: title,
+                                     layout: .leading,
+                                     items: rows,
+                                     actions: actions)
+
+        iface.pushTemplate(pane, animated: true, completion: nil)
     }
 }
 
