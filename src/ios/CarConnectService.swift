@@ -112,7 +112,7 @@ class CarConnectService: NSObject {
             )
 
             // 1. Placeholder
-            li.image = UIImage(systemName: "photo.on.rectangle")
+            li.setImage(UIImage(systemName: "photo.on.rectangle"))
 
             // 2. Resolve the image
             if let raw = item["image"] as? String, !raw.isEmpty {
@@ -121,11 +121,11 @@ class CarConnectService: NSObject {
                     ImageCacheProvider.shared.fetch(url) { [weak li] img in
                         guard let img else { return }
                         DispatchQueue.main.async {
-                            li?.image = img                // safe on main thread
+                            li?.setImage(img)                // safe on main thread
                         }
                     }
-                } else if let bundleImg = UIImage(named: raw) {
-                    li.image = bundleImg                 //  asset name in bundle
+                } else if let asset = UIImage(named: raw) {
+                    li.setImage(asset)                 //  asset name in bundle
                 }
             }
 
@@ -141,9 +141,11 @@ class CarConnectService: NSObject {
         })
 
         // Re-use template if it’s already on screen
-        if let current = iface.topTemplate as? CPListTemplate {
+        if
+            let current = iface.topTemplate as? CPListTemplate,
+            current.title == listTitle
+        {
             current.updateSections([section])
-            if current.title != listTitle { current.title = listTitle }
             return
         }
 
