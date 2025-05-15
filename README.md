@@ -75,7 +75,7 @@ CarConnect.isConnected().then(state => {
 CarConnect.showListView('Screen title', [
   {
     id: 1,
-    image: 'file:///android_asset/icon.png', // optional for Android Auto
+    image: 'https://www.riksof.com/icon-60.png', 
     title: 'Song A',
     description: 'Tap to see details',
   },

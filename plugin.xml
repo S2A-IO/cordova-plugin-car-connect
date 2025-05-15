@@ -120,6 +120,7 @@
         <!-- Swift source -->
         <source-file src="src/ios/CarConnect.swift"     />
         <source-file src="src/ios/CarConnectService.swift" />
+        <source-file src="src/ios/ImageCacheProvider.swift" />
         <source-file src="src/ios/PhoneSceneDelegate.swift" />
         <source-file src="src/ios/SceneDelegate.swift" />
 

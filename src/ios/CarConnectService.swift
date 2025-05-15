@@ -101,40 +101,48 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
-        // Title sent from JS; fall back to a sensible default
         let listTitle = payload["title"] as? String ?? "Select an item"
 
-        // Build section
+        // Build the list section
         let section = CPListSection(items: items.map { item in
             let li = CPListItem(
-                text: item["title"] as? String ?? "",
-                detailText: item["description"] as? String ?? ""
+                text:        item["title"] as? String ?? "",
+                detailText:  item["description"] as? String ?? ""
             )
+
+            // (Optional) immediate placeholder so the row isn’t empty.
+            li.image = UIImage(systemName: "photo")        // SF Symbol; pick what you like
+
+            // Asynchronously pull real artwork
+            if let urlString = item["image"] as? String,
+            let url       = URL(string: urlString) {
+                ImageCacheProvider.shared.fetch(url) { [weak li] img in
+                    guard let img = img else { return }
+                    li?.image = img        // CarPlay refreshes the row automatically (iOS 14+)
+                }
+            }
+
+            // Tap-handler → relay JSON back to JS layer
             li.handler = { _, _ in
                 if
-                let data = try? JSONSerialization.data(withJSONObject: item),
-                let json = String(data: data, encoding: .utf8) {
+                    let data = try? JSONSerialization.data(withJSONObject: item),
+                    let json = String(data: data, encoding: .utf8) {
                     CarConnect.emitListItemTapped(json)
                 }
             }
             return li
         })
 
-        // If a list is already on top, just refresh its contents
+        // Re-use or push the list template
         if let current = iface.topTemplate as? CPListTemplate {
             current.updateSections([section])
-            //  Update title if it changed (iOS 14+: `title` is writable)
-            if current.title != listTitle {
-                current.title = listTitle
-            }
-            return
+            if current.title != listTitle { current.title = listTitle }
+        } else {
+            let listTpl = CPListTemplate(title: listTitle, sections: [section])
+            iface.setRootTemplate(listTpl, animated: true)
         }
-
-        // Otherwise reset the stack with this list as the new root
-        let listTpl = CPListTemplate(title: listTitle,
-                                 sections: [section])
-        iface.setRootTemplate(listTpl, animated: true)
     }
+
 
 
     // MARK: - Show detail view ------------------------------------------
