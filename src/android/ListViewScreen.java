@@ -143,7 +143,7 @@ public class ListViewScreen extends Screen {
                     Log.d(TAG, "remote image: " + img);
 
                     // Asynchronously download, then refresh
-                    ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
+                    /*ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
                         @Override 
                         public void onReady(@NonNull Uri contentUri) {
                             Log.d(TAG, "icon ready: " + contentUri);
@@ -170,7 +170,7 @@ public class ListViewScreen extends Screen {
                             // Ask the framework to re-query onGetTemplate()
                             ListViewScreen.this.invalidate();
                         }
-                    });
+                    });*/
                     break;
 
                 case "file":
