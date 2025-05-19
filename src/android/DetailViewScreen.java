@@ -104,7 +104,7 @@ public class DetailViewScreen extends Screen {
 
         // Only add the strip if there is at least one action in it:
         ActionStrip stripBuilt = strip.build();
-        if (! stripBuilt.getActions().isEmpty()) {
+        if (!stripBuilt.getActions().isEmpty()) {
             tmplBuilder.setActionStrip(stripBuilt);
         }
 
