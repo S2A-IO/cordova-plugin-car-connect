@@ -97,11 +97,18 @@ public class DetailViewScreen extends Screen {
             pane.addAction(primary);             // put primary in the Pane
         }
 
-        return new PaneTemplate.Builder(pane.build())
-            .setTitle("Details")
-            .setHeaderAction(Action.BACK)
-            .setActionStrip(strip.build())
-            .build();
+        PaneTemplate.Builder tmplBuilder =
+            new PaneTemplate.Builder(pane.build())
+                .setTitle(payload.optString("title", "Details"))
+                .setHeaderAction(Action.BACK);
+
+        // Only add the strip if there is at least one action in it:
+        ActionStrip stripBuilt = strip.build();
+        if (! stripBuilt.getActions().isEmpty()) {
+            tmplBuilder.setActionStrip(stripBuilt);
+        }
+
+        return tmplBuilder.build();
     }
 
     private static Action buildAction(JSONObject btn, CallbackContext cb) {
