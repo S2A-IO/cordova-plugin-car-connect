@@ -175,10 +175,10 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
-        // ───────── Build the new CPInformationTemplate ─────────
-        let title = payload["title"] as? String ?? "Details"
+        // ─── Build new CPInformationTemplate ─────────────────────────────
+        let title   = payload["title"] as? String ?? "Details"
 
-        let rows = pairs.map {
+        let rows    = pairs.map {
             CPInformationItem(title: $0["key"] as? String ?? "",
                           detail: $0["value"] as? String ?? "")
         }
@@ -201,16 +201,9 @@ class CarConnectService: NSObject {
                                      items: rows,
                                      actions: actions)
 
-        // ───────── Replace the current detail (pop-and-push) or just push ─────────
-        if iface.topTemplate is CPInformationTemplate {
-            // Pop the old detail, then push the new one
-            iface.popTemplate(animated: false) { _, _ in
-                iface.pushTemplate(pane, animated: true, completion: nil)
-            }
-        } else {
-            // No detail screen on top yet – just push
-            iface.pushTemplate(pane, animated: true, completion: nil)
-        }
+        // ─── Guarantee depth ≤ 2 (root list + 1 detail) ──────────────────
+        iface.popToRootTemplate(animated: false)        // depth = 1
+        iface.pushTemplate(pane, animated: true)        // depth = 2
     }
 }
 
