@@ -175,7 +175,7 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
-        // ─── Build new CPInformationTemplate ─────────────────────────────
+        // ---------------- Build the new CPInformationTemplate -------------
         let title   = payload["title"] as? String ?? "Details"
 
         let rows    = pairs.map {
@@ -183,13 +183,13 @@ class CarConnectService: NSObject {
                           detail: $0["value"] as? String ?? "")
         }
 
-        let actions = buttons.prefix(2).map { btnJSON -> CPTextButton in
+        let actions = buttons.prefix(2).map { b -> CPTextButton in
             let style: CPTextButtonStyle =
-                (btnJSON["type"] as? String)?.lowercased() == "primary" ? .confirm : .normal
+                (b["type"] as? String)?.lowercased() == "primary" ? .confirm : .normal
 
-            return CPTextButton(title: btnJSON["text"] as? String ?? "Button",
-                            textStyle: style) { _ in
-                if let data = try? JSONSerialization.data(withJSONObject: btnJSON),
+            return CPTextButton(title: b["text"] as? String ?? "Button",
+                                textStyle: style) { _ in
+                if let data = try? JSONSerialization.data(withJSONObject: b),
                 let json = String(data: data, encoding: .utf8) {
                     CarConnect.emitDetailButtonPressed(json)
                 }
@@ -197,13 +197,26 @@ class CarConnectService: NSObject {
         }
 
         let pane = CPInformationTemplate(title: title,
-                                     layout: .leading,
-                                     items: rows,
-                                     actions: actions)
+                                         layout: .leading,
+                                         items: rows,
+                                         actions: actions)
 
-        // ─── Guarantee depth ≤ 2 (root list + 1 detail) ──────────────────
-        iface.popToRootTemplate(animated: false)        // depth = 1
-        iface.pushTemplate(pane, animated: true)        // depth = 2
+        // ---------------- Template-stack management -----------------------
+        guard let currentTop = iface.topTemplate else {
+            // Stack is empty (can happen right after CarPlay connects) – just push
+            iface.pushTemplate(pane, animated: true)
+            return
+        }
+
+        if currentTop is CPInformationTemplate {
+            // One detail already on top – pop it first, then push the fresh one
+            iface.popTemplate(animated: false) { _, _ in
+                iface.pushTemplate(pane, animated: true)
+            }
+        } else {
+            // We’re on the root list – push the detail
+            iface.pushTemplate(pane, animated: true)
+        }
     }
 }
 
