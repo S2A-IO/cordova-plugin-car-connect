@@ -94,8 +94,14 @@ class CarConnectService: NSObject {
     }
 
     // MARK: - Show list view --------------------------------------------
+    @objc private func handleShowListView(_ note: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.handleShowListViewInternal(note)
+        }
+    }
+
     @objc
-    private func handleShowListView(_ note: Notification) {
+    private func handleShowListViewInternal(_ note: Notification) {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
             let items   = payload["items"] as? [[String: Any]],
@@ -156,6 +162,12 @@ class CarConnectService: NSObject {
 
     // MARK: - Show detail view ------------------------------------------
     @objc private func handleShowDetailView(_ note: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.handleShowDetailViewInternal(note)
+        }
+    }
+
+    @objc private func handleShowDetailViewInternal(_ note: Notification) {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
             let pairs   = payload["pairs"]   as? [[String: Any]],
@@ -163,21 +175,21 @@ class CarConnectService: NSObject {
             let iface   = interfaceController
         else { return }
 
-        let title = payload["title"] as? String ?? "Details"
+        // ───────── Build the new CPInformationTemplate ─────────
+        let title   = payload["title"] as? String ?? "Details"
 
-        let rows = pairs.map {
+        let rows    = pairs.map {
             CPInformationItem(title: $0["key"] as? String ?? "",
                           detail: $0["value"] as? String ?? "")
         }
 
-        let actions = buttons.prefix(2).map { b -> CPTextButton in
+        let actions = buttons.prefix(2).map { btnJSON -> CPTextButton in
             let style: CPTextButtonStyle =
-                (b["type"] as? String)?.lowercased() == "primary"
-                ? .confirm : .normal
+                (btnJSON["type"] as? String)?.lowercased() == "primary" ? .confirm : .normal
 
-            return CPTextButton(title: b["text"] as? String ?? "Button",
+            return CPTextButton(title: btnJSON["text"] as? String ?? "Button",
                             textStyle: style) { _ in
-                if let data = try? JSONSerialization.data(withJSONObject: b),
+                if let data = try? JSONSerialization.data(withJSONObject: btnJSON),
                 let json = String(data: data, encoding: .utf8) {
                     CarConnect.emitDetailButtonPressed(json)
                 }
@@ -189,7 +201,21 @@ class CarConnectService: NSObject {
                                      items: rows,
                                      actions: actions)
 
-        iface.pushTemplate(pane, animated: true, completion: nil)
+        // ───────── Replace or pop-and-push to stay within CarPlay’s 5-template limit ─────────
+        if let current = iface.topTemplate as? CPInformationTemplate {
+            if #available(iOS 17.0, *) {
+                // Native replace API (non-blocking) avoids flicker
+                iface.replaceTemplate(current, with: pane, animated: true, completion: nil)
+            } else {
+                // Earlier iOS – pop current, then push the new one
+                iface.popTemplate(animated: false) { _ in
+                    iface.pushTemplate(pane, animated: true, completion: nil)
+                }
+            }
+        } else {
+            // No detail screen on top yet – just push
+            iface.pushTemplate(pane, animated: true, completion: nil)
+        }
     }
 }
 
