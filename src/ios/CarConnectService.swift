@@ -211,7 +211,7 @@ class CarConnectService: NSObject {
         if currentTop is CPInformationTemplate {
             // One detail already on top – pop it first, then push the fresh one
             iface.popTemplate(animated: false) { _, _ in
-                iface.pushTemplate(pane, animated: true)
+                iface.pushTemplate(pane, animated: false)
             }
         } else {
             // We’re on the root list – push the detail
