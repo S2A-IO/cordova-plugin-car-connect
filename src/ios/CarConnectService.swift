@@ -176,9 +176,9 @@ class CarConnectService: NSObject {
         else { return }
 
         // ───────── Build the new CPInformationTemplate ─────────
-        let title   = payload["title"] as? String ?? "Details"
+        let title = payload["title"] as? String ?? "Details"
 
-        let rows    = pairs.map {
+        let rows = pairs.map {
             CPInformationItem(title: $0["key"] as? String ?? "",
                           detail: $0["value"] as? String ?? "")
         }
@@ -201,16 +201,11 @@ class CarConnectService: NSObject {
                                      items: rows,
                                      actions: actions)
 
-        // ───────── Replace or pop-and-push to stay within CarPlay’s 5-template limit ─────────
-        if let current = iface.topTemplate as? CPInformationTemplate {
-            if #available(iOS 17.0, *) {
-                // Native replace API (non-blocking) avoids flicker
-                iface.replaceTemplate(current, with: pane, animated: true, completion: nil)
-            } else {
-                // Earlier iOS – pop current, then push the new one
-                iface.popTemplate(animated: false) { _ in
-                    iface.pushTemplate(pane, animated: true, completion: nil)
-                }
+        // ───────── Replace the current detail (pop-and-push) or just push ─────────
+        if iface.topTemplate is CPInformationTemplate {
+            // Pop the old detail, then push the new one
+            iface.popTemplate(animated: false) { _, _ in
+                iface.pushTemplate(pane, animated: true, completion: nil)
             }
         } else {
             // No detail screen on top yet – just push
