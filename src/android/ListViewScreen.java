@@ -130,9 +130,17 @@ public class ListViewScreen extends Screen {
 
         final Row.Builder builder = new Row.Builder()
                 .setTitle(title)
-                .addText(desc)
-                .setOnClickListener(() -> cb.success(item.toString()));
+                .addText(desc);
 
+        builder.setOnClickListener(() -> {
+            PluginResult pr = new PluginResult(
+                PluginResult.Status.OK,
+                item.toString()            // JSON for the tapped row
+            );
+            pr.setKeepCallback(true);          // <-- keep channel open
+            cb.sendPluginResult(pr);           // do NOT call cb.success(...)
+        });
+        
         if (img != null && !img.isEmpty()) {
             Uri uri = Uri.parse(img);
             String scheme = uri.getScheme() == null ? "" : uri.getScheme();
