@@ -136,13 +136,17 @@ class CarConnectService: NSObject {
             }
 
             // 3. Tap-handler
-            li.handler = { _, _ in
-                guard
-                    let data = try? JSONSerialization.data(withJSONObject: item),
-                    let json = String(data: data, encoding: .utf8)
-                else { return }
-                CarConnect.emitListItemTapped(json)
+            li.handler = { [weak li] _, completion in
+                // Send the event to JavaScript
+                if let data  = try? JSONSerialization.data(withJSONObject: item),
+                    let json  = String(data: data, encoding: .utf8) {
+                    CarConnect.emitListItemTapped(json)
+                }
+
+                // Tell CarPlay we’re finished ➜ stop spinner
+                completion()
             }
+
             return li
         })
 
