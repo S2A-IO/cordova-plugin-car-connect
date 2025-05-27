@@ -43,6 +43,8 @@ import androidx.car.app.model.Row;
 import androidx.core.graphics.drawable.IconCompat;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.PluginResult;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
@@ -140,7 +142,7 @@ public class ListViewScreen extends Screen {
             pr.setKeepCallback(true);          // <-- keep channel open
             cb.sendPluginResult(pr);           // do NOT call cb.success(...)
         });
-        
+
         if (img != null && !img.isEmpty()) {
             Uri uri = Uri.parse(img);
             String scheme = uri.getScheme() == null ? "" : uri.getScheme();
