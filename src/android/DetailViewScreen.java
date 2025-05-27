@@ -78,6 +78,7 @@ public class DetailViewScreen extends Screen {
         // Build up to two actions
         Action  primary = null;
         ActionStrip.Builder strip = new ActionStrip.Builder();
+        boolean hasStripAction = false;
 
         JSONArray buttonsArr = payload.optJSONArray("buttons");
         if (buttonsArr != null) {
@@ -89,6 +90,7 @@ public class DetailViewScreen extends Screen {
                     primary = a;                 // first “primary” wins
                 } else {
                     strip.addAction(a);          // all others go to the strip
+                    hasStripAction = true;
                 }
             }
         }
@@ -103,9 +105,8 @@ public class DetailViewScreen extends Screen {
                 .setHeaderAction(Action.BACK);
 
         // Only add the strip if there is at least one action in it:
-        ActionStrip stripBuilt = strip.build();
-        if (!stripBuilt.getActions().isEmpty()) {
-            tmplBuilder.setActionStrip(stripBuilt);
+        if (hasStripAction) {
+            tmplBuilder.setActionStrip(strip.build());
         }
 
         return tmplBuilder.build();
