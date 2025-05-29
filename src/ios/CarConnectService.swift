@@ -229,10 +229,11 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     }
 
     func goBack() {
-        guard
-            let iface = interfaceController,
-            iface.topTemplate !is CPListTemplate     // don't pop the root placeholder
-        else { return }
+        guard let iface = interfaceController else { return }
+
+        // Don’t pop the root placeholder:
+        guard let top = iface.topTemplate,
+              !(top is CPListTemplate) else { return }
 
         iface.popTemplate(animated: true)
     }
@@ -265,7 +266,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         // Walk stack top→down, skip index 0 (root placeholder)
         for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
             // 1. Pop everything above `tpl`
-            iface.popToTemplate(tpl, animated: false) { _, _ in
+            iface.pop(tpl, animated: false) { _, _ in
                 // 2. Pop `tpl` itself …
                 iface.popTemplate(animated: false) { _, _ in
                     // 3. …and push the fresh one (no animation)
