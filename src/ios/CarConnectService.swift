@@ -134,7 +134,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
             let items   = payload["items"] as? [[String: Any]],
-            let iface   = interfaceController
+            let _   = interfaceController
         else { return }
 
         let listTitle = payload["title"] as? String ?? "Select an item"
@@ -165,15 +165,14 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             }
 
             // 3. Tap-handler
-            li.handler = { [weak li] _, completion in
+            li.handler = { _, completion in
                 // Send the event to JavaScript
                 if let data  = try? JSONSerialization.data(withJSONObject: item),
                     let json  = String(data: data, encoding: .utf8) {
                     CarConnect.emitListItemTapped(json)
                 }
 
-                // Tell CarPlay we’re finished ➜ stop spinner
-                completion()
+                completion()          // stop spinner
             }
 
             return li
@@ -196,7 +195,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             let payload = note.userInfo?["payload"] as? [String: Any],
             let pairs   = payload["pairs"]   as? [[String: Any]],
             let buttons = payload["buttons"] as? [[String: Any]],
-            let iface   = interfaceController
+            let _       = interfaceController
         else { return }
 
         // ---------------- Build the new CPInformationTemplate -------------
@@ -235,7 +234,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         guard let top = iface.topTemplate,
               !(top is CPListTemplate) else { return }
 
-        iface.popTemplate(animated: true)
+        iface.popTemplate(animated: true, completion: nil)
     }
 
     // MARK: - CPInterfaceControllerDelegate -------------------------------
@@ -266,18 +265,18 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         // Walk stack top→down, skip index 0 (root placeholder)
         for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
             // 1. Pop everything above `tpl`
-            iface.pop(tpl, animated: false) { _, _ in
+            iface.pop(to: tpl, animated: false) { _, _ in
                 // 2. Pop `tpl` itself …
-                iface.popTemplate(animated: false) { _, _ in
+                iface.popTemplate(animated: false, completion: nil) { _, _ in
                     // 3. …and push the fresh one (no animation)
-                    iface.pushTemplate(newTemplate, animated: false)
+                    iface.pushTemplate(newTemplate, animated: false, completion: nil)
                 }
             }
             return                                   // job done, exit helper
         }
 
         // No existing template of that type – first time ➜ animate
-        iface.pushTemplate(newTemplate, animated: true)
+        iface.pushTemplate(newTemplate, animated: true, completion: nil)
     }
 }
 

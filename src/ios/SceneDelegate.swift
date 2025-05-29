@@ -7,7 +7,13 @@ import UIKit
 import CarPlay
 
 @available(iOS 14.0, *)
-class SceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
+class SceneDelegate: UIResponder {
+
+    private var interfaceController: CPInterfaceController?
+}
+
+@available(iOS 14.0, *)
+class SceneDelegate: CPTemplateApplicationSceneDelegate {
 
     private var interfaceController: CPInterfaceController?
 
