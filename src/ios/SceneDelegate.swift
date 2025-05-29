@@ -28,7 +28,7 @@ extension SceneDelegate: CPTemplateApplicationSceneDelegate {
     }
 }
 
-extension CarPlaySceneDelegate {
+extension SceneDelegate {
     /// CarPlay scene disconnected.
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didDisconnect interfaceController: CPInterfaceController) {
