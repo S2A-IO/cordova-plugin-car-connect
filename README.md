@@ -10,6 +10,7 @@
 
 | Capability | Android Auto | Apple CarPlay |
 |------------|-------------|---------------|
+|Plugin init (`init`) | Initializes plugin | Initializes plugin |
 |Native list view (`showListView`) | ✔ Jetpack Car‑App `ListTemplate` | ✔ `CPListTemplate` |
 |Native detail pane (`showDetailView`) | ✔ `PaneTemplate` | ✔ `CPInformationTemplate` |
 |Live interaction events | List‑row taps | Button presses |
@@ -65,6 +66,13 @@ These values populate the placeholder screen that appears on the head‑unit bef
 
 ```js
 import CarConnect from 'cordova-plugin-car-connect';
+
+// One-time setup as soon as Cordova is ready
+CarConnect.init(
+  'My Cool App',                // placeholder title
+  'Choose something on screen',  // placeholder body
+  event => console.log('Event when text is tapped:', event)
+);
 
 // Check connectivity
 CarConnect.isConnected().then(state => {

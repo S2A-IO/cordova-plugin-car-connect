@@ -20,6 +20,9 @@ var PLUGIN_NAME = 'CarConnect';
 /** No‑op placeholder for optional callbacks. */
 function noop() {}
 
+/** Remember the global handler registered via `init()` */
+var globalHandler = noop;
+
 /**
  * Ensures the provided value is a function, otherwise returns a no‑op.
  * @param {*} fn
@@ -40,6 +43,24 @@ function asFn(fn) {
  */
 function execNative(action, payload, ok, fail) {
   exec(asFn(ok), asFn(fail), PLUGIN_NAME, action, [payload]);
+}
+
+/**
+ * One-time initialisation.
+ *
+ * @param {String} title         Placeholder-screen title.
+ * @param {String} description   Placeholder-screen body text.
+ * @param {Function} [handler]   Called on native events (e.g. list-item taps).
+ * @param {Function} [onError]   Error callback.
+ */
+function init(title, description, handler, onError) {
+  globalHandler = asFn(handler);
+  execNative(
+    'initialize',
+    { title: String(title), description: String(description) },
+    globalHandler,           // keep the callback open for streaming events
+    onError
+  );
 }
 
 /**
@@ -137,6 +158,7 @@ function isConnected() {
  * @namespace CarConnect
  */
 var CarConnect = {
+  init: init,
   isConnected: isConnected,
   showListView: showListView,
   showDetailView: showDetailView

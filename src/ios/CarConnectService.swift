@@ -40,6 +40,14 @@ class CarConnectService: NSObject {
     // MARK: - Scene references ------------------------------------------
     private weak var interfaceController: CPInterfaceController?
 
+    // Customisable placeholder strings  (set by  CarConnect.initialize)
+    private var startupTitle:   String?
+    private var startupMessage: String?
+    func configure(startupTitle: String?, startupMessage: String?) {
+        self.startupTitle   = startupTitle
+        self.startupMessage = startupMessage
+    }
+
     // Called from SceneDelegate when CarPlay scene connects
     func scene(_ scene: CPTemplateApplicationScene,
                didConnect interfaceController: CPInterfaceController) {
@@ -70,14 +78,22 @@ class CarConnectService: NSObject {
 
     // MARK: - Placeholder template --------------------------------------
     private func placeholderTemplate() -> CPTemplate {
-        // Values injected via plugin.xml → Info.plist
-        let startup  = Bundle.main.object(forInfoDictionaryKey: "CarConnectStartup") as? [String: Any]
-        let title    = startup?["Title"]   as? String ?? "Car Connect"
-        let message  = startup?["Message"] as? String ?? "Open the app on your phone."
+        // 1️⃣ values supplied from JS-side init() if available …
+        if let t = startupTitle, let m = startupMessage {
+            let item    = CPListItem(text: m, detailText: nil)
+            let section = CPListSection(items: [item])
+            return CPListTemplate(title: t, sections: [section])
+        }
 
-        let item    = CPListItem(text: message, detailText: nil)
+        // 2️⃣ …otherwise fall back to Info.plist defaults
+        let startup = Bundle.main.object(forInfoDictionaryKey: "CarConnectStartup") as? [String: Any]
+        let t       = startup?["Title"]   as? String ?? "Car Connect"
+        let m       = startup?["Message"] as? String ?? "Open the app on your phone."
+
+
+        let item    = CPListItem(text: m, detailText: nil)
         let section = CPListSection(items: [item])
-        return CPListTemplate(title: title, sections: [section])
+        return CPListTemplate(title: t, sections: [section])
     }
 
     // MARK: - Notification wiring ---------------------------------------

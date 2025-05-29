@@ -31,6 +31,7 @@ class CarConnect: CDVPlugin {
     private static weak var shared: CarConnect?
 
     // Callback IDs cached so native UI can stream events
+    private var initCallbackId:   String?
     private var listCallbackId:   String?
     private var detailCallbackId: String?
 
@@ -46,6 +47,21 @@ class CarConnect: CDVPlugin {
     // JavaScript-exposed actions
     // Each one is annotated with @objc(actionName:)
     // ------------------------------------------------------------
+
+    // JS → CarConnect.init(…)
+    @objc(initialize:)
+    private func initialize(_ cmd: CDVInvokedUrlCommand) {
+        initCallbackId = cmd.callbackId
+
+        let args      = cmd.arguments.first as? [String: Any] ?? [:]
+        let title     = args["title"]       as? String
+        let message   = args["description"] as? String
+
+        CarConnectService.shared.configure(startupTitle: title,
+                                           startupMessage: message)
+
+        keepCallbackOpen(for: cmd.callbackId)   // stream native events back
+    }
 
     /// JS → CarConnect.showListView(items,…)
     @objc(showListView:)
@@ -100,14 +116,17 @@ class CarConnect: CDVPlugin {
     // ------------------------------------------------------------
 
     static func emitListItemTapped(_ jsonString: String) {
-        guard
-            let plugin = CarConnect.shared,
-            let cbID   = plugin.listCallbackId
+        guard 
+            let plugin = CarConnect.shared 
         else { return }
 
-        let res = CDVPluginResult(status: .ok, messageAs: jsonString)
+        // Priority: screen-specific callback ➜ else fall back to global handler
+        let cbID = plugin.listCallbackId ?? plugin.initCallbackId
+        guard let id = cbID else { return }
+
+        let res = CDVPluginResult(status: .ok, messageAs: json)
         res?.setKeepCallbackAs(true)
-        plugin.commandDelegate.send(res, callbackId: cbID)
+        plugin.commandDelegate.send(res, callbackId: id)
     }
 
     static func emitDetailButtonPressed(_ jsonString: String) {
