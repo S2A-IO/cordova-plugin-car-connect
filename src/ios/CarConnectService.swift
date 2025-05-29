@@ -46,6 +46,18 @@ class CarConnectService: NSObject {
     func configure(startupTitle: String?, startupMessage: String?) {
         self.startupTitle   = startupTitle
         self.startupMessage = startupMessage
+
+        // 🔄  If the placeholder is currently visible, refresh it:
+        if
+            let iface   = interfaceController,
+            let topList = iface.topTemplate as? CPListTemplate,
+            topList.title == startupTitle            // ← was our old placeholder
+        {
+            // Recreate and replace – no animation to avoid flicker
+            iface.setRootTemplate(placeholderTemplate(),
+                              animated: false,
+                              completion: nil)
+        }
     }
 
     // Called from SceneDelegate when CarPlay scene connects
