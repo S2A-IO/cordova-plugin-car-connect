@@ -12,8 +12,18 @@ import org.apache.cordova.CallbackContext;
 public final class CallbackRegistry {
     private CallbackRegistry() {}
 
+    private static CallbackContext initCallback;
     private static volatile CallbackContext listCallback;
     private static volatile CallbackContext detailCallback;
+
+    // Init callback.
+    public static void setInitCallback(CallbackContext cb) { 
+        initCallback = cb;
+    }
+
+    public static CallbackContext getInitCallback() { 
+        return initCallback;
+    }
 
     // List callbacks ----------------------------------------------------
     public static synchronized void setListCallback(CallbackContext cb) {

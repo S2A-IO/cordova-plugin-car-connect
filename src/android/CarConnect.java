@@ -27,8 +27,10 @@ import org.json.JSONObject;
 public class CarConnect extends CordovaPlugin {
 
     /* Intent actions understood by CarConnectService */
-    public static final String ACTION_SHOW_LIST_VIEW   = "io.s2a.connect.SHOW_LIST_VIEW";
+    public static final String ACTION_INITIALIZE = "io.s2a.connect.INITIALIZE";
+    public static final String ACTION_SHOW_LIST_VIEW = "io.s2a.connect.SHOW_LIST_VIEW";
     public static final String ACTION_SHOW_DETAIL_VIEW = "io.s2a.connect.SHOW_DETAIL_VIEW";
+    public static final String ACTION_GO_BACK = "io.s2a.connect.GO_BACK";
 
     /* Intent extra key */
     private static final String EXTRA_PAYLOAD = "payload";
@@ -53,6 +55,10 @@ public class CarConnect extends CordovaPlugin {
             throws JSONException {
 
         switch (action) {
+            case "initialize":
+                init(args.optJSONObject(0), cb);
+                return true;
+
             case "showListView":
                 showListView(args.optJSONObject(0), cb);
                 return true;
@@ -65,6 +71,10 @@ public class CarConnect extends CordovaPlugin {
                 isConnected(cb);
                 return true;
 
+            case "goBack":
+                goBack(cb);
+                return true;
+
             default:
                 return false;   // Unknown action
         }
@@ -73,6 +83,13 @@ public class CarConnect extends CordovaPlugin {
     // ------------------------------------------------------------------
     //  Public API – delegates to the service
     // ------------------------------------------------------------------
+
+    private void init(JSONObject payload, CallbackContext cb) {
+        // Keep callback so placeholder-taps stream back to JS
+        CallbackRegistry.setInitCallback(cb);
+        forwardToService(ACTION_INITIALIZE, payload);
+        keepCallbackOpen(cb);              // leave JS callback hanging open
+    }
 
     private void showListView(JSONObject payload, CallbackContext cb) {
         // Cache callback so row-taps stream back to JS
@@ -92,6 +109,11 @@ public class CarConnect extends CordovaPlugin {
     private void isConnected(CallbackContext cb) {
         int state = CarConnectService.getConnectionState(); // 0, 1, or 2
         cb.success(state);
+    }
+
+    private void goBack(CallbackContext cb) {
+        forwardToService(ACTION_GO_BACK, null);
+        cb.success();                      // nothing to return
     }
 
     // ------------------------------------------------------------------

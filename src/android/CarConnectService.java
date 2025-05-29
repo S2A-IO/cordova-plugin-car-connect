@@ -34,6 +34,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.car.app.validation.HostValidator;
 import androidx.car.app.CarAppService;
+import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
 import androidx.car.app.ScreenManager;
 import androidx.car.app.Session;
@@ -64,8 +65,10 @@ public final class CarConnectService extends CarAppService {
             "CarConnect plugin ready.\nOpen the mobile app to send content.";
     private static final String DEFAULT_STARTUP_TITLE   = "Car Connect";
 
+    private static final String ACTION_INITIALIZE = CarConnect.ACTION_INITIALIZE;
     private static final String ACTION_SHOW_LIST_VIEW   = CarConnect.ACTION_SHOW_LIST_VIEW;
     private static final String ACTION_SHOW_DETAIL_VIEW = CarConnect.ACTION_SHOW_DETAIL_VIEW;
+    private static final String ACTION_GO_BACK = CarConnect.ACTION_GO_BACK; 
 
     private CarConnectSession currentSession;
 
@@ -92,11 +95,17 @@ public final class CarConnectService extends CarAppService {
             String action = intent.getAction();
             String json   = intent.getStringExtra("payload");
 
+            if (ACTION_INITIALIZE.equals(action) && currentSession != null) {
+                currentSession.init(json);
+            }
             if (ACTION_SHOW_LIST_VIEW.equals(action) && currentSession != null) {
                 currentSession.showListView(json);
             }
             if (ACTION_SHOW_DETAIL_VIEW.equals(action) && currentSession != null) {
                 currentSession.showDetailView(json);
+            }
+            if (ACTION_GO_BACK.equals(action) && currentSession != null) {
+                currentSession.goBack();
             }
         }
         return START_STICKY;
@@ -179,8 +188,9 @@ public final class CarConnectService extends CarAppService {
     // ------------------------------------------------------------------
 
     private static final class CarConnectSession extends Session {
-        private final String placeholderText;
-        private final String title;
+        private String placeholderText;
+        private String title;
+        private PlaceholderScreen placeholderScreen;
 
         CarConnectSession(String placeholderText, String title) {
             this.placeholderText = placeholderText;
@@ -190,7 +200,25 @@ public final class CarConnectService extends CarAppService {
         @Override
         @NonNull
         public Screen onCreateScreen(@NonNull Intent intent) {
-            return new PlaceholderScreen(getCarContext(), placeholderText, title);
+            placeholderScreen = new PlaceholderScreen(getCarContext(),
+                                                   placeholderText, title);
+            return placeholderScreen;
+        }
+
+        void init(String json) {
+            try {
+                JSONObject p = new JSONObject(json == null ? "{}" : json);
+                placeholderText = p.optString("description", placeholderText);
+                title           = p.optString("title",        title);
+
+                // If placeholder is currently visible, refresh immediately
+                if (placeholderScreen != null &&
+                    getCarContext().getCarService(ScreenManager.class)
+                               .getTop() == placeholderScreen) {
+
+                    placeholderScreen.update(title, placeholderText);
+                }
+            } catch (JSONException ignored) { }
         }
 
         void showListView(String json) {
@@ -210,6 +238,13 @@ public final class CarConnectService extends CarAppService {
                 getCarContext().getCarService(ScreenManager.class).push(screen);
             } catch (JSONException ignored) {}
         }
+
+        void goBack() {
+            ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
+            if (sm.getBackStack().size() > 0) {
+                sm.pop();
+            }
+        }
     }
 
     // ------------------------------------------------------------------
@@ -217,21 +252,39 @@ public final class CarConnectService extends CarAppService {
     // ------------------------------------------------------------------
 
     private static final class PlaceholderScreen extends Screen {
-        private final String message;
-        private final String title;
+        private String message;
+        private String title;
 
-        PlaceholderScreen(@NonNull androidx.car.app.CarContext ctx, String message, String title) {
+        PlaceholderScreen(@NonNull CarContext ctx, String message, String title) {
             super(ctx);
             this.message = message;
             this.title = title;
+        }
+
+        /** Called by Session when a new init() arrives while we’re on top. */
+        void update(String newTitle, String newMessage) {
+            this.title   = newTitle;
+            this.message = newMessage;
+            invalidate();                  // forces onGetTemplate() rebuild
         }
 
         @NonNull
         @Override
         public Template onGetTemplate() {
             return new MessageTemplate.Builder(message)
-                    .setTitle(title)
-                    .build();
+                .setTitle(title)
+                /* Tap on the message → JS callback */
+                .setOnClickListener(() -> {
+                    CallbackContext cb = CallbackRegistry.getInitCallback();
+                    if (cb != null) {
+                        PluginResult pr = new PluginResult(
+                                PluginResult.Status.OK,
+                                "placeholderTapped");
+                        pr.setKeepCallback(true);
+                        cb.sendPluginResult(pr);
+                    }
+                })
+                .build();
         }
     }
 }
