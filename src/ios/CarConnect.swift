@@ -51,8 +51,17 @@ class CarConnect: CDVPlugin {
     // JS → CarConnect.init(…)
     @objc(initialize:)
     private func initialize(_ cmd: CDVInvokedUrlCommand) {
+        // 1️⃣ Close the previous global callback channel if we had one
+        if let old = initCallbackId {
+            let bye = CDVPluginResult(status: .noResult)
+            bye?.setKeepCallbackAs(false)           // <- closes it
+            commandDelegate.send(bye, callbackId: old)
+        }
+
+        // 2️⃣ Store the new callback-id
         initCallbackId = cmd.callbackId
 
+        // 3️⃣ Configure placeholder strings
         let args      = cmd.arguments.first as? [String: Any] ?? [:]
         let title     = args["title"]       as? String
         let message   = args["description"] as? String
@@ -60,6 +69,7 @@ class CarConnect: CDVPlugin {
         CarConnectService.shared.configure(startupTitle: title,
                                            startupMessage: message)
 
+        // 4️⃣ Keep the new channel open
         keepCallbackOpen(for: cmd.callbackId)   // stream native events back
     }
 
