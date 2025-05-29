@@ -267,7 +267,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             // 1. Pop everything above `tpl`
             iface.pop(to: tpl, animated: false) { _, _ in
                 // 2. Pop `tpl` itself …
-                iface.popTemplate(animated: false, completion: nil) { _, _ in
+                iface.popTemplate(animated: false) { _, _ in
                     // 3. …and push the fresh one (no animation)
                     iface.pushTemplate(newTemplate, animated: false, completion: nil)
                 }
