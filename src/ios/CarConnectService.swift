@@ -24,7 +24,7 @@ import UIKit
 import CarPlay
 
 @available(iOS 14.0, *)
-class CarConnectService: NSObject {
+class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
     // MARK: - Singleton -------------------------------------------------
     static let shared = CarConnectService()
@@ -65,6 +65,7 @@ class CarConnectService: NSObject {
                didConnect interfaceController: CPInterfaceController) {
 
         self.interfaceController = interfaceController
+        self.interfaceController?.delegate = self
         connectionState          = .carPlay
 
         interfaceController.setRootTemplate(placeholderTemplate(),
@@ -178,18 +179,9 @@ class CarConnectService: NSObject {
             return li
         })
 
-        // Re-use template if it’s already on screen
-        if
-            let current = iface.topTemplate as? CPListTemplate,
-            current.title == listTitle
-        {
-            current.updateSections([section])
-            return
-        }
-
-        // Otherwise make it the new root
+        // -- Push the fresh list -----------------------------------------------
         let tpl = CPListTemplate(title: listTitle, sections: [section])
-        iface.setRootTemplate(tpl, animated: true, completion: nil)
+        replaceTemplate(existingOfType: CPListTemplate.self, with: tpl)
     }
 
     // MARK: - Show detail view ------------------------------------------
@@ -233,22 +225,37 @@ class CarConnectService: NSObject {
                                          items: rows,
                                          actions: actions)
 
-        // ---------------- Template-stack management -----------------------
-        guard let currentTop = iface.topTemplate else {
-            // Stack is empty (can happen right after CarPlay connects) – just push
-            iface.pushTemplate(pane, animated: true)
-            return
+        replaceTemplate(existingOfType: CPInformationTemplate.self, with: pane)
+    }
+
+    // MARK: - Template-stack utilities ------------------------------------
+    /**
+     * Replaces the first existing template of the given type (above the root
+     * placeholder) with `newTemplate`. Chooses the animation automatically:
+     * - If a replacement happened → push *without* animation.
+     * - If no existing template found → push *with* animation.
+     */
+    private func replaceTemplate<T: CPTemplate>(
+        existingOfType _: T.Type,
+        with newTemplate: T
+    ) {
+        guard let iface = interfaceController else { return }
+
+        // Walk stack top→down, skip index 0 (root placeholder)
+        for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
+            // 1. Pop everything above `tpl`
+            iface.popToTemplate(tpl, animated: false) { _, _ in
+                // 2. Pop `tpl` itself …
+                iface.popTemplate(animated: false) { _, _ in
+                    // 3. …and push the fresh one (no animation)
+                    iface.pushTemplate(newTemplate, animated: false)
+                }
+            }
+            return                                   // job done, exit helper
         }
 
-        if currentTop is CPInformationTemplate {
-            // One detail already on top – pop it first, then push the fresh one
-            iface.popTemplate(animated: false) { _, _ in
-                iface.pushTemplate(pane, animated: false)
-            }
-        } else {
-            // We’re on the root list – push the detail
-            iface.pushTemplate(pane, animated: true)
-        }
+        // No existing template of that type – first time ➜ animate
+        iface.pushTemplate(newTemplate, animated: true)
     }
 }
 

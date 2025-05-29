@@ -15,7 +15,7 @@
 |Native detail pane (`showDetailView`) | ✔ `PaneTemplate` | ✔ `CPInformationTemplate` |
 |Live interaction events | List‑row taps | Button presses |
 |Connection status (`isConnected`) | Returns **0** / **2** | Returns **0** / **1** |
-|Configurable startup title & message | Manifest `<meta‑data>` | Info.plist (optional) |
+|Navigate back to previous screen (`goBack`) | Navigate back | Navigate back |
 
 > ℹ️ No UI WebViews are shown in‑car — every screen is rendered by the platform’s own HMI for a consistent, distraction‑optimised experience.
 
@@ -108,6 +108,12 @@ CarConnect.showDetailView(
     const btn = JSON.parse(btnJson);
     console.log('Pressed', btn.id);
   }
+);
+
+// Go back to last screen.
+CarConnect.goBack(
+  () => console.log('✅ went back one screen'),
+  err => console.error('❌ could not go back', err)
 );
 ```
 

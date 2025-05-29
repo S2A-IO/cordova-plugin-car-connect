@@ -149,6 +149,15 @@ function isConnected() {
   });
 }
 
+/**
+ * Pops the current CarPlay template (same as tapping the back button).
+ * @param {Function} [ok]   Called when the pop completes.
+ * @param {Function} [err]  Called on error.
+ */
+function goBack(ok, err) {
+  execNative('goBack', {}, ok, err);
+}
+
 //--------------------------------------------------------------------
 // Public API
 //--------------------------------------------------------------------
@@ -161,7 +170,8 @@ var CarConnect = {
   init: init,
   isConnected: isConnected,
   showListView: showListView,
-  showDetailView: showDetailView
+  showDetailView: showDetailView,
+  goBack: goBack
 };
 
 module.exports = CarConnect;

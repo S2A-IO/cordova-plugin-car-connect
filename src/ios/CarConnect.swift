@@ -76,6 +76,8 @@ class CarConnect: CDVPlugin {
     /// JS → CarConnect.showListView(items,…)
     @objc(showListView:)
     private func showListView(_ cmd: CDVInvokedUrlCommand) {
+        // Close any earlier list callback before replacing it
+        closeCallback(&listCallbackId)
         listCallbackId = cmd.callbackId
 
         let payload = cmd.arguments.first as? [String: Any] ?? [:]
@@ -91,6 +93,7 @@ class CarConnect: CDVPlugin {
     /// JS → CarConnect.showDetailView(pairs, buttons,…)
     @objc(showDetailView:)
     private func showDetailView(_ cmd: CDVInvokedUrlCommand) {
+        closeCallback(&detailCallbackId)
         detailCallbackId = cmd.callbackId
 
         let payload = cmd.arguments.first as? [String: Any] ?? [:]
@@ -111,6 +114,13 @@ class CarConnect: CDVPlugin {
         commandDelegate.send(res, callbackId: cmd.callbackId)
     }
 
+    @objc(goBack:)
+    private func goBack(_ cmd: CDVInvokedUrlCommand) {
+        CarConnectService.shared.goBack()          // pop on native side
+        let res = CDVPluginResult(status: .ok)
+        commandDelegate.send(res, callbackId: cmd.callbackId)
+    }
+
     // ------------------------------------------------------------
     // Helper to keep callback channel open
     // ------------------------------------------------------------
@@ -120,6 +130,17 @@ class CarConnect: CDVPlugin {
         res?.setKeepCallbackAs(true)
         commandDelegate.send(res, callbackId: id)
     }
+
+    private func closeCallback(_ id: inout String?) {
+        guard let cb = id else { return }
+        let res = CDVPluginResult(status: .noResult)
+        res?.setKeepCallbackAs(false)
+        commandDelegate.send(res, callbackId: cb)
+        id = nil
+    }
+
+    static func closeListCallback()   { shared?.closeCallback(&shared!.listCallbackId) }
+    static func closeDetailCallback() { shared?.closeCallback(&shared!.detailCallbackId) }
 
     // ------------------------------------------------------------
     // Native → JS emitters (called from CarConnectService)
@@ -134,7 +155,7 @@ class CarConnect: CDVPlugin {
         let cbID = plugin.listCallbackId ?? plugin.initCallbackId
         guard let id = cbID else { return }
 
-        let res = CDVPluginResult(status: .ok, messageAs: json)
+        let res = CDVPluginResult(status: .ok, messageAs: jsonString)
         res?.setKeepCallbackAs(true)
         plugin.commandDelegate.send(res, callbackId: id)
     }
