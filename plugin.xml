@@ -114,6 +114,8 @@
             <feature name="CarConnect">
                 <!-- iOS side -->
                 <param name="ios-package" value="CarConnect" />
+
+                <param name="onload" value="true"/>
             </feature>
         </config-file>
 

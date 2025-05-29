@@ -228,6 +228,27 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         replaceTemplate(existingOfType: CPInformationTemplate.self, with: pane)
     }
 
+    func goBack() {
+        guard
+            let iface = interfaceController,
+            iface.topTemplate !is CPListTemplate     // don't pop the root placeholder
+        else { return }
+
+        iface.popTemplate(animated: true)
+    }
+
+    // MARK: - CPInterfaceControllerDelegate -------------------------------
+    func interfaceController(_ interfaceController: CPInterfaceController,
+                         didPop template: CPTemplate,
+                         animated: Bool) {
+
+        if template is CPListTemplate {
+            CarConnect.closeListCallback()
+        } else if template is CPInformationTemplate {
+            CarConnect.closeDetailCallback()
+        }
+    }
+
     // MARK: - Template-stack utilities ------------------------------------
     /**
      * Replaces the first existing template of the given type (above the root
