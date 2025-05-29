@@ -12,18 +12,17 @@ class SceneDelegate: UIResponder {
     private var interfaceController: CPInterfaceController?
 }
 
+/* --------------------------------------------------------------------
+ *  MARK: - CPTemplateApplicationSceneDelegate
+ * ------------------------------------------------------------------ */
 @available(iOS 14.0, *)
-class SceneDelegate: CPTemplateApplicationSceneDelegate {
+extension SceneDelegate: CPTemplateApplicationSceneDelegate {
 
-    private var interfaceController: CPInterfaceController?
-
-    /// CarPlay scene connected (non-navigation apps use this signature).
+    /// CarPlay scene connected (non-navigation apps).
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didConnect interfaceController: CPInterfaceController) {
 
         self.interfaceController = interfaceController
-
-        // Hand-off to your shared service to build / push templates.
         CarConnectService.shared.scene(templateApplicationScene,
                                        didConnect: interfaceController)
     }
