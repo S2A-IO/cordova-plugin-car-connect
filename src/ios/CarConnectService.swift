@@ -44,19 +44,18 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     private var startupTitle:   String?
     private var startupMessage: String?
     func configure(startupTitle: String?, startupMessage: String?) {
+        let oldTitle   = self.startupTitle
+        let oldMessage = self.startupMessage
+
         self.startupTitle   = startupTitle
         self.startupMessage = startupMessage
 
-        // 🔄  If the placeholder is currently visible, refresh it:
-        if
-            let iface   = interfaceController,
-            let topList = iface.topTemplate as? CPListTemplate,
-            topList.title == startupTitle            // ← was our old placeholder
-        {
-            // Recreate and replace – no animation to avoid flicker
+        if let iface   = interfaceController,
+        let topList = iface.topTemplate as? CPListTemplate,
+            topList.title == oldTitle {                  // compare with OLD title
             iface.setRootTemplate(placeholderTemplate(),
-                              animated: false,
-                              completion: nil)
+                          animated: false,
+                          completion: nil)
         }
     }
 
