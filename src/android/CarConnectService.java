@@ -44,6 +44,8 @@ import androidx.car.app.model.Template;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.PluginResult;
 
 /**
  * Android‑Auto service entry point for the Cordova "car-connect" plugin.
@@ -241,7 +243,8 @@ public final class CarConnectService extends CarAppService {
 
         void goBack() {
             ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
-            if (sm.getBackStack().size() > 0) {
+            // In 1.4.0 the root screen is element 0, so we only pop if > 1
+            if (sm.getStack().size() > 1) {
                 sm.pop();
             }
         }
@@ -271,19 +274,25 @@ public final class CarConnectService extends CarAppService {
         @NonNull
         @Override
         public Template onGetTemplate() {
-            return new MessageTemplate.Builder(message)
-                .setTitle(title)
-                /* Tap on the message → JS callback */
+
+            // Action that relays a press back to JavaScript
+            Action tapAction = new Action.Builder()
+                .setTitle("OK")                       // or any short label
                 .setOnClickListener(() -> {
                     CallbackContext cb = CallbackRegistry.getInitCallback();
                     if (cb != null) {
                         PluginResult pr = new PluginResult(
-                                PluginResult.Status.OK,
-                                "placeholderTapped");
+                            PluginResult.Status.OK,
+                            "placeholderTapped");   // payload back to JS
                         pr.setKeepCallback(true);
                         cb.sendPluginResult(pr);
                     }
                 })
+                .build();
+
+            return new MessageTemplate.Builder(message)
+                .setTitle(title)
+                .addAction(tapAction)                  // one “OK” button
                 .build();
         }
     }
