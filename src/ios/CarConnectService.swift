@@ -40,26 +40,54 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     // MARK: - Scene references ------------------------------------------
     private weak var interfaceController: CPInterfaceController?
 
+    // MARK: - Placeholder bookkeeping -----------------------------------
+    private weak var placeholderTemplateRef: CPListTemplate?
+    private weak var placeholderRowRef: CPListItem?
+
     // Customisable placeholder strings  (set by  CarConnect.initialize)
     private var startupTitle:   String?
     private var startupMessage: String?
+
+    /** 
+     * Update the placeholder strings shown on the root template.
+     * – If only the **message** changes → mutate the existing row in place.
+     * – If the **title** changes → replace the root *once* (debounced via
+     *   `runTemplateOp`).
+     */
     func configure(startupTitle: String?, startupMessage: String?) {
-        let oldTitle   = self.startupTitle
+        let titleDidChange   = (self.startupTitle   != startupTitle)
+        let messageDidChange = (self.startupMessage != startupMessage)
 
         self.startupTitle   = startupTitle
         self.startupMessage = startupMessage
+
+        // Something has to change.
+        guard messageDidChange || titleDidChange else { return }
 
         DispatchQueue.main.async { [weak self] in
             guard
                 let self  = self,
                 let iface = self.interfaceController,
-                let top   = iface.topTemplate as? CPListTemplate,
-                top.title == oldTitle
+                let row   = self.placeholderRowRef,
+                let list  = self.placeholderTemplateRef
             else { return }
 
+            // ────────────────────────────────────────────────────────────
+            //  1. Message update → mutate row text + refresh sections
+            // ────────────────────────────────────────────────────────────
+            if messageDidChange {
+                row.text = startupMessage ?? ""
+                list.updateSections(list.sections) { _ in }
+            }
+
+            // ────────────────────────────────────────────────────────────
+            //  2. Title change → rebuild placeholder + replace root once
+            // ────────────────────────────────────────────────────────────
+            guard titleDidChange else { return }
+
             runTemplateOp {
-                iface.setRootTemplate(self.placeholderTemplate(),
-                          animated: false) { [weak self] _, _ in
+                iface.setRootTemplate(self.buildPlaceholderTemplate(),
+                                       animated: false) { [weak self] _, _ in
                     self?.templateOpDidFinish()
                 }
             }
