@@ -57,9 +57,12 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
                 top.title == oldTitle
             else { return }
 
-            iface.setRootTemplate(self.placeholderTemplate(),
-                                  animated: false,
-                                  completion: nil)
+            runTemplateOp {
+                iface.setRootTemplate(self.placeholderTemplate(),
+                          animated: false) { [weak self] _, _ in
+                    self?.templateOpDidFinish()
+                }
+            }
         }
     }
 
@@ -267,19 +270,47 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
         // Walk stack top→down, skip index 0 (root placeholder)
         for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
-            // 1. Pop everything above `tpl`
-            iface.pop(to: tpl, animated: false) { _, _ in
-                // 2. Pop `tpl` itself …
-                iface.popTemplate(animated: false) { _, _ in
-                    // 3. …and push the fresh one (no animation)
-                    iface.pushTemplate(newTemplate, animated: false, completion: nil)
+            runTemplateOp {
+                iface.pop(to: tpl, animated: false) { [weak self] _, _ in
+                    iface.popTemplate(animated: false) { _, _ in
+                        iface.pushTemplate(newTemplate, animated: false) { _, _ in
+                            self?.templateOpDidFinish()
+                        }
+                    }
                 }
             }
+            
             return                                   // job done, exit helper
         }
 
         // No existing template of that type – first time ➜ animate
-        iface.pushTemplate(newTemplate, animated: true, completion: nil)
+        runTemplateOp {
+            iface.pushTemplate(newTemplate, animated: true) { [weak self] _, _ in
+                self?.templateOpDidFinish()
+            }
+        }
+    }
+
+    // MARK: - Template-operation serialiser -------------------------------
+    private var templateOpBusy = false
+    private var templateOpQueue: [() -> Void] = []
+
+    private func runTemplateOp(_ op: @escaping () -> Void) {
+        if templateOpBusy {
+            templateOpQueue.append(op)
+            return
+        }
+        templateOpBusy = true
+        op()
+    }
+
+    private func templateOpDidFinish() {
+        templateOpBusy = false
+        if !templateOpQueue.isEmpty {
+            let next = templateOpQueue.removeFirst()
+            // run on next run-loop tick (always main queue)
+            DispatchQueue.main.async { self.runTemplateOp(next) }
+        }
     }
 }
 
