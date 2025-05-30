@@ -272,25 +272,8 @@ public final class CarConnectService extends CarAppService {
         @NonNull
         @Override
         public Template onGetTemplate() {
-
-            // Action that relays a press back to JavaScript
-            Action tapAction = new Action.Builder()
-                .setTitle("OK")                       // or any short label
-                .setOnClickListener(() -> {
-                    CallbackContext cb = CallbackRegistry.getInitCallback();
-                    if (cb != null) {
-                        PluginResult pr = new PluginResult(
-                            PluginResult.Status.OK,
-                            "placeholderTapped");   // payload back to JS
-                        pr.setKeepCallback(true);
-                        cb.sendPluginResult(pr);
-                    }
-                })
-                .build();
-
             return new MessageTemplate.Builder(message)
                 .setTitle(title)
-                .addAction(tapAction)                  // one “OK” button
                 .build();
         }
     }
