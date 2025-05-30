@@ -45,17 +45,21 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     private var startupMessage: String?
     func configure(startupTitle: String?, startupMessage: String?) {
         let oldTitle   = self.startupTitle
-        let oldMessage = self.startupMessage
 
         self.startupTitle   = startupTitle
         self.startupMessage = startupMessage
 
-        if let iface   = interfaceController,
-        let topList = iface.topTemplate as? CPListTemplate,
-            topList.title == oldTitle {                  // compare with OLD title
-            iface.setRootTemplate(placeholderTemplate(),
-                          animated: false,
-                          completion: nil)
+        DispatchQueue.main.async { [weak self] in
+            guard
+                let self  = self,
+                let iface = self.interfaceController,
+                let top   = iface.topTemplate as? CPListTemplate,
+                top.title == oldTitle
+            else { return }
+
+            iface.setRootTemplate(self.placeholderTemplate(),
+                                  animated: false,
+                                  completion: nil)
         }
     }
 
