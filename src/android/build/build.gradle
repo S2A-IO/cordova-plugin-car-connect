@@ -8,7 +8,7 @@
  */
 dependencies {
     // Jetpack Car-App 1.4 brings ListTemplate, PaneTemplate, etc.
-    implementation 'androidx.car.app:1.5.1'
+    implementation 'androidx.car.app:app:1.4.0'
 
     // Core AndroidX helpers used by the plugin
     implementation 'androidx.core:core:1.16.0'
