@@ -38,6 +38,7 @@ import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
 import androidx.car.app.ScreenManager;
 import androidx.car.app.Session;
+import androidx.car.app.model.Action;
 import androidx.car.app.model.MessageTemplate;
 import androidx.car.app.model.Template;
 
@@ -243,10 +244,7 @@ public final class CarConnectService extends CarAppService {
 
         void goBack() {
             ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
-            // In 1.4.0 the root screen is element 0, so we only pop if > 1
-            if (sm.getStack().size() > 1) {
-                sm.pop();
-            }
+            sm.pop();
         }
     }
 
