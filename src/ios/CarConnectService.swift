@@ -41,7 +41,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     private weak var interfaceController: CPInterfaceController?
 
     // MARK: - Placeholder bookkeeping -----------------------------------
-    private weak var placeholderTemplateRef: CPListTemplate?
+    private var placeholderTemplateRef: CPListTemplate?
 
     // Customisable placeholder strings  (set by  CarConnect.initialize)
     private var startupTitle:   String?
@@ -98,8 +98,9 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         self.interfaceController?.delegate = self
         connectionState          = .carPlay
 
-        interfaceController.setRootTemplate(placeholderTemplate(),
-                                            animated: false, completion: nil)
+        let root = buildPlaceholderTemplate()
+        interfaceController.setRootTemplate(root,
+            animated: false, completion: nil)
     }
 
     // For future-proofing you may keep the window variant and forward to
@@ -120,7 +121,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     }
 
     // MARK: - Placeholder template --------------------------------------
-    private func placeholderTemplate() -> CPTemplate {
+    private func buildPlaceholderTemplate() -> CPTemplate {
         // 1️⃣ values supplied from JS-side init() if available …
         if let t = startupTitle, let m = startupMessage {
             let item    = CPListItem(text: m, detailText: nil)
@@ -133,10 +134,11 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         let t       = startup?["Title"]   as? String ?? "Car Connect"
         let m       = startup?["Message"] as? String ?? "Open the app on your phone."
 
-
         let item    = CPListItem(text: m, detailText: nil)
         let section = CPListSection(items: [item])
-        return CPListTemplate(title: t, sections: [section])
+        let tpl     = CPListTemplate(title: t, sections: [section])
+        placeholderTemplateRef = tpl                      // <-- NEW
+        return tpl
     }
 
     // MARK: - Notification wiring ---------------------------------------
