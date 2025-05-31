@@ -42,7 +42,6 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
     // MARK: - Placeholder bookkeeping -----------------------------------
     private weak var placeholderTemplateRef: CPListTemplate?
-    private weak var placeholderRowRef: CPListItem?
 
     // Customisable placeholder strings  (set by  CarConnect.initialize)
     private var startupTitle:   String?
@@ -67,17 +66,14 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         DispatchQueue.main.async { [weak self] in
             guard
                 let self  = self,
-                let iface = self.interfaceController,
-                let row   = self.placeholderRowRef,
-                let list  = self.placeholderTemplateRef
+                let iface = self.interfaceController
             else { return }
 
             // ────────────────────────────────────────────────────────────
             //  1. Message update → mutate row text + refresh sections
             // ────────────────────────────────────────────────────────────
-            if messageDidChange {
-                row.text = startupMessage ?? ""
-                list.updateSections(list.sections) { _ in }
+            if messageDidChange, let list = self.placeholderTemplateRef {
+                list.updateSections([self.buildPlaceholderSection(message: startupMessage)], completion: nil)
             }
 
             // ────────────────────────────────────────────────────────────
@@ -85,7 +81,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             // ────────────────────────────────────────────────────────────
             guard titleDidChange else { return }
 
-            runTemplateOp {
+            self.runTemplateOp {
                 iface.setRootTemplate(self.buildPlaceholderTemplate(),
                                        animated: false) { [weak self] _, _ in
                     self?.templateOpDidFinish()
