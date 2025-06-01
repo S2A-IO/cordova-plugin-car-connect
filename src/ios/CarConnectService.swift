@@ -73,7 +73,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             //  1. Message update → mutate row text + refresh sections
             // ────────────────────────────────────────────────────────────
             if messageDidChange, let list = self.placeholderTemplateRef {
-                list.updateSections([self.buildPlaceholderSection(message: startupMessage)], completion: nil)
+                list.updateSections([self.buildPlaceholderSection(message: startupMessage)])
             }
 
             // ────────────────────────────────────────────────────────────
@@ -337,6 +337,12 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             // run on next run-loop tick (always main queue)
             DispatchQueue.main.async { self.runTemplateOp(next) }
         }
+    }
+
+    // MARK: - Helper to rebuild the single-row placeholder section ----------
+    private func buildPlaceholderSection(message: String?) -> CPListSection {
+        let row = CPListItem(text: message ?? "", detailText: nil)
+        return CPListSection(items: [row])
     }
 }
 
