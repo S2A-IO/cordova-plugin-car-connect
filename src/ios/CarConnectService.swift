@@ -63,7 +63,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         // Something has to change.
         guard messageDidChange || titleDidChange else { return }
 
-        DispatchQueue.main.async { [weak self] in
+        DispatchQueue.main.async(execute: { [weak self] in
             guard
                 let self  = self,
                 let iface = self.interfaceController
@@ -87,7 +87,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
                     self?.templateOpDidFinish()
                 }
             }
-        }
+        })
     }
 
     // Called from SceneDelegate when CarPlay scene connects
