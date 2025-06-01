@@ -63,7 +63,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         // Something has to change.
         guard messageDidChange || titleDidChange else { return }
 
-        DispatchQueue.main.async(execute: { [weak self] in
+        DispatchQueue.main.async(group: nil, qos: .unspecified, flags: [], execute: { [weak self] in
             guard
                 let self  = self,
                 let iface = self.interfaceController
