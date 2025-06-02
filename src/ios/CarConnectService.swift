@@ -300,7 +300,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         guard let iface = interfaceController else { return }
 
         // Walk stack top→down, skip index 0 (root placeholder)
-        for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
+        /*for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
             runTemplateOp {
                 iface.pop(to: tpl, animated: false) { [weak self] _, _ in
                     iface.popTemplate(animated: false) { _, _ in
@@ -312,14 +312,14 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             }
             
             return                                   // job done, exit helper
-        }
+        }*/
 
         // No existing template of that type – first time ➜ animate
-        runTemplateOp {
+        //runTemplateOp {
             iface.pushTemplate(newTemplate, animated: true) { [weak self] _, _ in
                 self?.templateOpDidFinish()
             }
-        }
+        //}
     }
 
     // MARK: - Template-operation serialiser -------------------------------
