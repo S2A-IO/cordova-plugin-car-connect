@@ -135,6 +135,11 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         let m       = startup?["Message"] as? String ?? "Open the app on your phone."
 
         let item    = CPListItem(text: m, detailText: nil)
+        item.handler = { _, completion in
+            CarConnect.emitListItemTapped("")
+            completion()
+        }
+
         let section = CPListSection(items: [item])
         let tpl     = CPListTemplate(title: t, sections: [section])
         placeholderTemplateRef = tpl                      // <-- NEW
