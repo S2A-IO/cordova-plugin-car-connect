@@ -218,12 +218,15 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
         // --- If the list template already exists → update it in place --
         if let tpl = listTemplateRef {
-            tpl.title = listTitle
-            tpl.updateSections([section])
-            
-            // pop to it if it’s buried
-            replaceTemplate(existingOfType: CPListTemplate.self, with: tpl)
-            return
+            if tpl.title == listTitle {
+                // same title → safe to mutate just the rows/sections
+                tpl.updateSections([section])
+                replaceTemplate(existingOfType: CPListTemplate.self, with: tpl)
+                return
+            } else {
+                // title changed → need a new template
+                listTemplateRef = nil   // fall through to create-push block
+            }
         }
 
         // --- First-time push → build & store ---------------------------
