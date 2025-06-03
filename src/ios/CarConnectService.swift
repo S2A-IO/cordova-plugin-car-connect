@@ -45,10 +45,6 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     private var detailTemplateRef: CPInformationTemplate?
     private var listTemplateRef: CPListTemplate?
 
-    // Customisable placeholder strings  (set by  CarConnect.initialize)
-    private var startupTitle: String?
-    private var startupMessage: String?
-
     /** 
      * Update the placeholder strings shown on the root template.
      * – If only the **message** changes → mutate the existing row in place.
@@ -56,40 +52,21 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
      *   `runTemplateOp`).
      */
     func configure(startupTitle: String?, startupMessage: String?) {
-        let titleDidChange   = (self.startupTitle   != startupTitle)
-        let messageDidChange = (self.startupMessage != startupMessage)
-
         self.startupTitle   = startupTitle
         self.startupMessage = startupMessage
 
-        // Something has to change.
-        guard messageDidChange || titleDidChange else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let iface = self.interfaceController else { return }
 
-        DispatchQueue.main.async(group: nil, qos: .unspecified, flags: [], execute: { [weak self] in
-            guard
-                let self  = self,
-                let iface = self.interfaceController
-            else { return }
+            // rebuild placeholder, clear any previous refs
+            let root = self.buildPlaceholderTemplate()
+            self.placeholderTemplateRef = root
+            self.listTemplateRef   = nil
+            self.detailTemplateRef = nil
 
-            // ────────────────────────────────────────────────────────────
-            //  1. Message update → mutate row text + refresh sections
-            // ────────────────────────────────────────────────────────────
-            if messageDidChange, let list = self.placeholderTemplateRef {
-                list.updateSections([self.buildPlaceholderSection(message: startupMessage)])
-            }
-
-            // ────────────────────────────────────────────────────────────
-            //  2. Title change → rebuild placeholder + replace root once
-            // ────────────────────────────────────────────────────────────
-            guard titleDidChange else { return }
-
-            self.runTemplateOp {
-                iface.setRootTemplate(self.buildPlaceholderTemplate(),
-                                       animated: false) { [weak self] _, _ in
-                    self?.templateOpDidFinish()
-                }
-            }
-        })
+            // pop everything & install the fresh placeholder as the new root
+            iface.setRootTemplate(root, animated: false, completion: nil)
+        }
     }
 
     // Called from SceneDelegate when CarPlay scene connects
@@ -353,8 +330,19 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
         // 2️⃣ No template of that type in the stack → normal first-time push
     //runTemplateOp {
-        iface.pushTemplate(newTemplate, animated: true) { [weak self] _, _ in
-            self?.templateOpDidFinish()
+        if iface.topTemplate === placeholderTemplateRef {
+            // Root is the placeholder → swap it for the new screen
+            placeholderTemplateRef = nil             // placeholder no longer visible
+            iface.setRootTemplate(newTemplate,
+                          animated: true) { [weak self] _, _ in
+                self?.templateOpDidFinish()
+            }
+        } else {
+            // Normal case: push on top of whatever is showing
+            iface.pushTemplate(newTemplate,
+                       animated: true) { [weak self] _, _ in
+                self?.templateOpDidFinish()
+            }
         }
     //}
     }
