@@ -332,6 +332,10 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     ) {
         guard let iface = interfaceController else { return }
 
+        let stackDepth   = iface.templates.count        // root counts as 1
+        let maxDepth     = 5                            // Apple-documented limit
+        NSLog("🚘 CarPlay stack depth = %d / %d", stackDepth, maxDepth)
+
         // 1️⃣ If the desired template -type- already exists above the root…
         for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
 
