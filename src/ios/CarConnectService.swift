@@ -105,27 +105,24 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
     // MARK: - Placeholder template --------------------------------------
     private func buildPlaceholderTemplate() -> CPListTemplate {
-        // 1️⃣ values supplied from JS-side init() if available …
-        if let t = startupTitle, let m = startupMessage {
-            let item    = CPListItem(text: m, detailText: nil)
-            let section = CPListSection(items: [item])
-            return CPListTemplate(title: t, sections: [section])
-        }
+        let title   = startupTitle ??
+                  (Bundle.main.object(forInfoDictionaryKey: "CarConnectStartup")
+                      as? [String: Any])?["Title"]   as? String ?? "Car Connect"
 
-        // 2️⃣ …otherwise fall back to Info.plist defaults
-        let startup = Bundle.main.object(forInfoDictionaryKey: "CarConnectStartup") as? [String: Any]
-        let t       = startup?["Title"]   as? String ?? "Car Connect"
-        let m       = startup?["Message"] as? String ?? "Open the app on your phone."
+        let message = startupMessage ??
+                  (Bundle.main.object(forInfoDictionaryKey: "CarConnectStartup")
+                      as? [String: Any])?["Message"] as? String ?? "Open the app on your phone."
 
-        let item    = CPListItem(text: m, detailText: nil)
-        item.handler = { _, completion in
+        let row     = CPListItem(text: message, detailText: nil)
+        row.handler = { _, completion in
             CarConnect.emitListItemTapped("")
             completion()
         }
 
-        let section = CPListSection(items: [item])
-        let tpl     = CPListTemplate(title: t, sections: [section])
-        placeholderTemplateRef = tpl                      // <-- NEW
+        let section = CPListSection(items: [row])
+        let tpl = CPListTemplate(title: title, sections: [section])
+
+        placeholderTemplateRef = tpl     // <-- **always** set, even with custom title/message
         return tpl
     }
 
@@ -314,7 +311,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         guard let iface = interfaceController else { return }
 
         let stackDepth   = iface.templates.count        // root counts as 1
-        let maxDepth     = 5                            // Apple-documented limit
+        let maxDepth     = 3                            // Apple-documented limit
         NSLog("🚘 CarPlay stack depth = %d / %d", stackDepth, maxDepth)
 
         // 1️⃣ If the desired template -type- already exists above the root…
