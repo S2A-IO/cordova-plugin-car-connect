@@ -45,6 +45,10 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     private var detailTemplateRef: CPInformationTemplate?
     private var listTemplateRef: CPListTemplate?
 
+    // Customisable placeholder strings  (set by  CarConnect.initialize)
+    private var startupTitle: String?
+    private var startupMessage: String?
+
     /** 
      * Update the placeholder strings shown on the root template.
      * – If only the **message** changes → mutate the existing row in place.
