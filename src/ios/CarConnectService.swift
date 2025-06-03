@@ -104,7 +104,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     }
 
     // MARK: - Placeholder template --------------------------------------
-    private func buildPlaceholderTemplate() -> CPTemplate {
+    private func buildPlaceholderTemplate() -> CPListTemplate {
         // 1️⃣ values supplied from JS-side init() if available …
         if let t = startupTitle, let m = startupMessage {
             let item    = CPListItem(text: m, detailText: nil)
