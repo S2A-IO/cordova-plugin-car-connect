@@ -42,10 +42,11 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
     // MARK: - Placeholder bookkeeping -----------------------------------
     private var placeholderTemplateRef: CPListTemplate?
-    private var detailTemplateRef:      CPInformationTemplate?
+    private var detailTemplateRef: CPInformationTemplate?
+    private var listTemplateRef: CPListTemplate?
 
     // Customisable placeholder strings  (set by  CarConnect.initialize)
-    private var startupTitle:   String?
+    private var startupTitle: String?
     private var startupMessage: String?
 
     /** 
@@ -171,8 +172,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     private func handleShowListViewInternal(_ note: Notification) {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
-            let items   = payload["items"] as? [[String: Any]],
-            let _   = interfaceController
+            let items   = payload["items"] as? [[String: Any]]
         else { return }
 
         let listTitle = payload["title"] as? String ?? "Select an item"
@@ -216,8 +216,19 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             return li
         })
 
-        // -- Push the fresh list -----------------------------------------------
+        // --- If the list template already exists → update it in place --
+        if let tpl = listTemplateRef {
+            tpl.title = listTitle
+            tpl.updateSections([section])
+            
+            // pop to it if it’s buried
+            replaceTemplate(existingOfType: CPListTemplate.self, with: tpl)
+            return
+        }
+
+        // --- First-time push → build & store ---------------------------
         let tpl = CPListTemplate(title: listTitle, sections: [section])
+        listTemplateRef = tpl
         replaceTemplate(existingOfType: CPListTemplate.self, with: tpl)
     }
 
@@ -259,11 +270,12 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         // ------------------------------------------------------------------
         //  1. If the template already exists → update it in place
         // ------------------------------------------------------------------
-        if let tmpl = detailTemplateRef,
-            tmpl.title == title {           // same title ⇒ safe to mutate
-                tmpl.items   = rows            // immediate UI refresh
-                tmpl.actions = actions
-            return                         // nothing else to push
+        if let tmpl = detailTemplateRef {
+            tmpl.items   = rows
+            tmpl.actions = actions
+            // Bring it to the top if it isn’t already
+            replaceTemplate(existingOfType: CPInformationTemplate.self, with: tmpl)
+            return
         }
 
         // ------------------------------------------------------------------
@@ -296,6 +308,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
         if template is CPListTemplate {
             CarConnect.closeListCallback()
+            listTemplateRef = nil
         } else if template is CPInformationTemplate {
             CarConnect.closeDetailCallback()
             detailTemplateRef = nil
@@ -306,7 +319,8 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     /**
      * Replaces the first existing template of the given type (above the root
      * placeholder) with `newTemplate`. Chooses the animation automatically:
-     * - If a replacement happened → push *without* animation.
+     * - If a replacement happened → brings the existing template of the given type to 
+     *   the top of the stack.
      * - If no existing template found → push *with* animation.
      */
     private func replaceTemplate<T: CPTemplate>(
@@ -315,27 +329,27 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     ) {
         guard let iface = interfaceController else { return }
 
-        // Walk stack top→down, skip index 0 (root placeholder)
+        // 1️⃣ If the desired template -type- already exists above the root…
         for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
-            //runTemplateOp {
-                iface.pop(to: tpl, animated: false) { [weak self] _, _ in
-                    iface.popTemplate(animated: false) { _, _ in
-                        iface.pushTemplate(newTemplate, animated: false) { _, _ in
-                            self?.templateOpDidFinish()
-                        }
-                    }
-                }
-            //}
-            
-            return                                   // job done, exit helper
-        }
 
-        // No existing template of that type – first time ➜ animate
+            // If it’s already on top → nothing to do
+            if iface.topTemplate === tpl { return }
+
+            // Otherwise just pop back to it (brings it to top)
         //runTemplateOp {
-            iface.pushTemplate(newTemplate, animated: true) { [weak self] _, _ in
+            iface.pop(to: tpl, animated: true) { [weak self] _, _ in
                 self?.templateOpDidFinish()
             }
         //}
+            return
+        }
+
+        // 2️⃣ No template of that type in the stack → normal first-time push
+    //runTemplateOp {
+        iface.pushTemplate(newTemplate, animated: true) { [weak self] _, _ in
+            self?.templateOpDidFinish()
+        }
+    //}
     }
 
     // MARK: - Template-operation serialiser -------------------------------
