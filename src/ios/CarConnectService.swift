@@ -42,6 +42,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
     // MARK: - Placeholder bookkeeping -----------------------------------
     private var placeholderTemplateRef: CPListTemplate?
+    private var detailTemplateRef:      CPInformationTemplate?
 
     // Customisable placeholder strings  (set by  CarConnect.initialize)
     private var startupTitle:   String?
@@ -231,14 +232,13 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         guard
             let payload = note.userInfo?["payload"] as? [String: Any],
             let pairs   = payload["pairs"]   as? [[String: Any]],
-            let buttons = payload["buttons"] as? [[String: Any]],
-            let _       = interfaceController
+            let buttons = payload["buttons"] as? [[String: Any]]
         else { return }
 
         // ---------------- Build the new CPInformationTemplate -------------
-        let title   = payload["title"] as? String ?? "Details"
+        let title = payload["title"] as? String ?? "Details"
 
-        let rows    = pairs.map {
+        let rows = pairs.map {
             CPInformationItem(title: $0["key"] as? String ?? "",
                           detail: $0["value"] as? String ?? "")
         }
@@ -249,18 +249,33 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
             return CPTextButton(title: b["text"] as? String ?? "Button",
                                 textStyle: style) { _ in
-                if let data = try? JSONSerialization.data(withJSONObject: b),
-                let json = String(data: data, encoding: .utf8) {
+                if let data  = try? JSONSerialization.data(withJSONObject: b),
+                let json  = String(data: data, encoding: .utf8) {
                     CarConnect.emitDetailButtonPressed(json)
                 }
             }
         }
 
-        let pane = CPInformationTemplate(title: title,
-                                         layout: .leading,
-                                         items: rows,
-                                         actions: actions)
+        // ------------------------------------------------------------------
+        //  1. If the template already exists → update it in place
+        // ------------------------------------------------------------------
+        if let tmpl = detailTemplateRef,
+            tmpl.title == title {           // same title ⇒ safe to mutate
+                tmpl.items   = rows            // immediate UI refresh
+                tmpl.actions = actions
+            return                         // nothing else to push
+        }
 
+        // ------------------------------------------------------------------
+        //  2. Otherwise build & push a fresh template once
+        // ------------------------------------------------------------------
+        let pane = CPInformationTemplate(title: title,
+                                     layout: .leading,
+                                     items: rows,
+                                     actions: actions)
+
+        
+        detailTemplateRef = pane           // keep a strong reference
         replaceTemplate(existingOfType: CPInformationTemplate.self, with: pane)
     }
 
@@ -283,6 +298,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             CarConnect.closeListCallback()
         } else if template is CPInformationTemplate {
             CarConnect.closeDetailCallback()
+            detailTemplateRef = nil
         }
     }
 
