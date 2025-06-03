@@ -314,7 +314,18 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         let maxDepth     = 3                            // Apple-documented limit
         NSLog("🚘 CarPlay stack depth = %d / %d", stackDepth, maxDepth)
 
-        // 1️⃣ If the desired template -type- already exists above the root…
+        // If the root (index 0) is already the desired type and there are
+        // more templates above it, simply pop back to root.
+        if let root = iface.templates.first, root is T, iface.topTemplate !== root {
+            //runTemplateOp {
+                iface.pop(to: root, animated: true) { [weak self] _, _ in
+                    self?.templateOpDidFinish()
+                }
+            //}
+            return
+        }
+
+        // If the desired template -type- already exists above the root…
         for (idx, tpl) in iface.templates.enumerated() where idx > 0 && tpl is T {
 
             // If it’s already on top → nothing to do
@@ -329,7 +340,7 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             return
         }
 
-        // 2️⃣ No template of that type in the stack → normal first-time push
+        // No template of that type in the stack → normal first-time push
     //runTemplateOp {
         if iface.topTemplate === placeholderTemplateRef {
             // Root is the placeholder → swap it for the new screen
