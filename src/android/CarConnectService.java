@@ -71,7 +71,10 @@ public final class CarConnectService extends CarAppService {
     private static final String ACTION_INITIALIZE = CarConnect.ACTION_INITIALIZE;
     private static final String ACTION_SHOW_LIST_VIEW   = CarConnect.ACTION_SHOW_LIST_VIEW;
     private static final String ACTION_SHOW_DETAIL_VIEW = CarConnect.ACTION_SHOW_DETAIL_VIEW;
-    private static final String ACTION_GO_BACK = CarConnect.ACTION_GO_BACK; 
+    private static final String ACTION_GO_BACK = CarConnect.ACTION_GO_BACK;
+
+    private static final String LIST_MARKER_PREFIX   = "list:";
+    private static final String DETAIL_MARKER_PREFIX = "detail:"; 
 
     private CarConnectSession currentSession;
 
@@ -236,21 +239,60 @@ public final class CarConnectService extends CarAppService {
 
         void showListView(String json) {
             try {
-                JSONObject payload = new JSONObject(json);
-                ListViewScreen screen = new ListViewScreen(getCarContext(), payload,
-                        CallbackRegistry.getListCallback());
-                getCarContext().getCarService(ScreenManager.class).push(screen);
-            } catch (JSONException ignored) {}
+                JSONObject payload = new JSONObject(json == null ? "{}" : json);
+
+                // Choose a stable id; fall back to title if caller omitted one
+                String id = payload.optString("id",
+                     payload.optString("title", "anonymous"));
+                String marker = LIST_MARKER_PREFIX + id;
+
+                ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
+
+                try {
+                    sm.popTo(marker);                         // ← fast path (screen exists)
+                    Screen top = sm.getTop();
+                    if (top instanceof ListViewScreen) {
+                        ((ListViewScreen) top).update(payload);   // refresh its content
+                    }
+                    return;                                    // done
+                } catch (IllegalArgumentException notFound) {
+                    /* fall through to create-and-push */
+                }
+
+                // Slow path – screen wasn’t found, so we create a new one
+                ListViewScreen screen = new ListViewScreen(getCarContext(),
+                    payload, CallbackRegistry.getListCallback());
+                screen.setMarker(marker);
+                sm.push(screen);
+            } catch (JSONException ignore) { /* payload was malformed */ }
         }
 
         void showDetailView(String json) {
             try {
-                JSONObject payload = new JSONObject(json);
-                DetailViewScreen screen = new DetailViewScreen(getCarContext(), payload,
-                        CallbackRegistry.getDetailCallback());
-                getCarContext().getCarService(ScreenManager.class).push(screen);
-            } catch (JSONException ignored) {}
-        }
+                JSONObject payload = new JSONObject(json == null ? "{}" : json);
+                String id = payload.optString("id",
+                     payload.optString("title", "anonymous"));
+                String marker = DETAIL_MARKER_PREFIX + id;
+
+                ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
+
+                try {
+                    sm.popTo(marker);                         // screen already on stack?
+                    Screen top = sm.getTop();
+                    if (top instanceof DetailViewScreen) {
+                        ((DetailViewScreen) top).update(payload);
+                    }
+                    return;
+                } catch (IllegalArgumentException notFound) {
+                    /* create new detail screen instead */
+                }
+
+                DetailViewScreen screen = new DetailViewScreen(getCarContext(),
+                    payload, CallbackRegistry.getDetailCallback());
+                screen.setMarker(marker);
+                sm.push(screen);
+            } catch (JSONException ignore) { }
+        } 
 
         void goBack() {
             ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
