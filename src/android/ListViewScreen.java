@@ -152,7 +152,7 @@ public class ListViewScreen extends Screen {
         if (img != null && iconCache.containsKey(img)) {
             Log.d(TAG, "Icon cache hit: " + img);
 
-            builder.setImage(iconCache.get(img), Row.IMAGE_TYPE_ICON);
+            builder.setImage(iconCache.get(img), Row.IMAGE_TYPE_SMALL_ICON);
             return builder.build();
         }
 
@@ -199,7 +199,7 @@ public class ListViewScreen extends Screen {
 
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
-                    builder.setImage(icon, Row.IMAGE_TYPE_ICON);
+                    builder.setImage(icon, Row.IMAGE_TYPE_SMALL_ICON);
 
                     iconCache.put(img, icon);
                     break;
