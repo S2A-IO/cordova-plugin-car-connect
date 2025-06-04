@@ -214,15 +214,25 @@ public final class CarConnectService extends CarAppService {
                 placeholderText = p.optString("description", placeholderText);
                 title           = p.optString("title",        title);
 
-                // If placeholder is currently visible, refresh immediately
-                if (placeholderScreen != null &&
-                    getCarContext().getCarService(ScreenManager.class)
-                               .getTop() == placeholderScreen) {
+                // Locate the ScreenManager ----------------------------------------
+                ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
 
+                if (placeholderScreen != null) {
+                    // Bring the placeholder back to the top if it isn’t there already
+                    if (sm.getTop() != placeholderScreen) {
+                        sm.popToRoot();               // collapses every screen above root
+                        // -- safety net: if somebody removed the root at runtime
+                        if (sm.getTop() != placeholderScreen) {
+                            sm.push(placeholderScreen);
+                        }
+                    }
+                    
+                    // Refresh the visible template --------------------------------
                     placeholderScreen.update(title, placeholderText);
                 }
-            } catch (JSONException ignored) { }
+            } catch (JSONException ignored) { /* no-op */ }
         }
+
 
         void showListView(String json) {
             try {
