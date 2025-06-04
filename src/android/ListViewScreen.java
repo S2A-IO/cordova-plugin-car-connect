@@ -156,7 +156,7 @@ public class ListViewScreen extends Screen {
         if (img != null && iconCache.containsKey(img)) {
             Log.d(TAG, "Icon cache hit: " + img);
 
-            builder.setImage(iconCache.get(img), Row.IMAGE_TYPE_ICON);
+            builder.setImage(iconCache.get(img), Row.IMAGE_TYPE_LARGE);
             return builder.build();
         }
 
@@ -179,7 +179,7 @@ public class ListViewScreen extends Screen {
         Bitmap bmp = BitmapFactory.decodeStream(is);
 
         // scale to Auto's small-icon size (48 dp ≈ 48 px on mdpi host)
-        Bitmap scaled = Bitmap.createScaledBitmap(bmp, 48, 48, true);
+        Bitmap scaled = Bitmap.createScaledBitmap(bmp, 80, 80, true);
 
         CarIcon icon = new CarIcon.Builder(
                 IconCompat.createWithBitmap(scaled)).build();
