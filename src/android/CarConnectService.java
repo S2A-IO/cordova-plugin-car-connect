@@ -240,11 +240,7 @@ public final class CarConnectService extends CarAppService {
 
         void showListView(String json) {
             try {
-                Log.i(TAG, "In showListView");
-
                 JSONObject payload = new JSONObject(json == null ? "{}" : json);
-
-                Log.i(TAG, json);
 
                 // We need to have just one marker for all lists.
                 String marker = LIST_MARKER_PREFIX;
@@ -261,19 +257,14 @@ public final class CarConnectService extends CarAppService {
                         ((ListViewScreen) top).update(payload);   // refresh its content
                     }
 
-                    Log.i(TAG, "Updated listview");
                     return;                                    // done
                 }
-
-                Log.i(TAG, "New list view being instantiated");
 
                 // Slow path – screen wasn’t found, so we create a new one
                 ListViewScreen screen = new ListViewScreen(getCarContext(),
                     payload, CallbackRegistry.getListCallback());
                 screen.setMarker(marker);
                 sm.push(screen);
-
-                Log.i(TAG, "New list view pushed");
             } catch (JSONException ignore) { /* payload was malformed */ }
         }
 
