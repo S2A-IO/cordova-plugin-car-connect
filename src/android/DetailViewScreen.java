@@ -21,6 +21,8 @@
 
 package io.s2a.connect;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
