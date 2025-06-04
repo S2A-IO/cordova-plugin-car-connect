@@ -28,6 +28,10 @@
 
 package io.s2a.connect;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import java.io.InputStream;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
@@ -171,8 +175,24 @@ public class ListViewScreen extends Screen {
                         public void onReady(@NonNull Uri contentUri) {
                             Log.d(TAG, "icon ready: " + contentUri);
 
+                            try (InputStream is = ctx.getContentResolver().openInputStream(contentUri)) {
+        Bitmap bmp = BitmapFactory.decodeStream(is);
+
+        // scale to Auto's small-icon size (48 dp ≈ 48 px on mdpi host)
+        Bitmap scaled = Bitmap.createScaledBitmap(bmp, 48, 48, true);
+
+        CarIcon icon = new CarIcon.Builder(
+                IconCompat.createWithBitmap(scaled)).build();
+        iconCache.put(img, icon);
+
+        template = buildTemplate(ctx, payloadJson, cb);
+        invalidate();
+    } catch (Exception e) {
+        Log.w(TAG, "decode failed", e);
+    }
+
                             // Give the host process temporary read access.
-                            String hostPkg = ctx.getHostInfo().getPackageName();
+                            /*String hostPkg = ctx.getHostInfo().getPackageName();
                             ctx.grantUriPermission(
                                 hostPkg, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
@@ -187,7 +207,7 @@ public class ListViewScreen extends Screen {
                             } catch (JSONException ignored) { }
 
                             // Ask the framework to re-query onGetTemplate()
-                            ListViewScreen.this.invalidate();
+                            ListViewScreen.this.invalidate();*/
                         }
                     });
                     break;
