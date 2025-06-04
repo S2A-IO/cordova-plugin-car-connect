@@ -32,6 +32,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.car.app.validation.HostValidator;
 import androidx.car.app.CarAppService;
 import androidx.car.app.CarContext;
