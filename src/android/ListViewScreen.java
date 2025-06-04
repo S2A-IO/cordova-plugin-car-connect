@@ -69,6 +69,9 @@ public class ListViewScreen extends Screen {
     private CallbackContext callback;
     private ListTemplate template;
 
+    // One CarIcon per image URL – survives template rebuilds
+    private final Map<String, CarIcon> iconCache = new HashMap<>();
+
     /**
      * Builds a {@link ListViewScreen} from the items JSON.
      *
@@ -145,6 +148,14 @@ public class ListViewScreen extends Screen {
             cb.sendPluginResult(pr);           // do NOT call cb.success(...)
         });
 
+        // Icon already cached → use it and exit early.
+        if (img != null && iconCache.containsKey(img)) {
+            Log.d(TAG, "Icon cache hit: " + img);
+
+            builder.setImage(iconCache.get(img), Row.IMAGE_TYPE_ICON);
+            return builder.build();
+        }
+
         if (img != null && !img.isEmpty()) {
             Uri uri = Uri.parse(img);
             String scheme = uri.getScheme() == null ? "" : uri.getScheme();
@@ -168,6 +179,8 @@ public class ListViewScreen extends Screen {
                                         CarIcon icon = new CarIcon.Builder(
                                             IconCompat.createWithBitmap(bmp)).build();
                                         builder.setImage(icon, Row.IMAGE_TYPE_ICON);
+
+                                        iconCache.put(img, icon); 
                                     }
                                 }
                             } catch (Exception e) {
@@ -193,6 +206,8 @@ public class ListViewScreen extends Screen {
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
                     builder.setImage(icon, Row.IMAGE_TYPE_ICON);
+
+                    iconCache.put(img, icon);
                     break;
 
                 default:
