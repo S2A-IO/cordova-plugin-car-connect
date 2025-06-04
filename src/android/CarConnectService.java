@@ -259,13 +259,13 @@ public final class CarConnectService extends CarAppService {
                         ((ListViewScreen) top).update(payload);   // refresh its content
                     }
 
-                    Log.i(TAG, 'Updated listview');
+                    Log.i(TAG, "Updated listview");
                     return;                                    // done
                 } catch (IllegalArgumentException notFound) {
                     /* fall through to create-and-push */
                 }
 
-                Log.i(TAG, 'New list view being instantiated');
+                Log.i(TAG, "New list view being instantiated");
 
                 // Slow path – screen wasn’t found, so we create a new one
                 ListViewScreen screen = new ListViewScreen(getCarContext(),
@@ -273,7 +273,7 @@ public final class CarConnectService extends CarAppService {
                 screen.setMarker(marker);
                 sm.push(screen);
 
-                Log.i(TAG, 'New list view pushed');
+                Log.i(TAG, "New list view pushed");
             } catch (JSONException ignore) { /* payload was malformed */ }
         }
 
