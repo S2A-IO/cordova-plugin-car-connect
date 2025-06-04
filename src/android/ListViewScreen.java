@@ -28,8 +28,7 @@
 
 package io.s2a.connect;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 
@@ -49,7 +48,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -173,21 +171,15 @@ public class ListViewScreen extends Screen {
                         public void onReady(@NonNull Uri contentUri) {
                             Log.d(TAG, "icon ready: " + contentUri);
 
-                            try (InputStream is =
-                                     ctx.getContentResolver().openInputStream(contentUri)) {
-                                if (is != null) {
-                                    Bitmap bmp = BitmapFactory.decodeStream(is);
-                                    if (bmp != null) {
-                                        CarIcon icon = new CarIcon.Builder(
-                                            IconCompat.createWithBitmap(bmp)).build();
-                                        builder.setImage(icon, Row.IMAGE_TYPE_ICON);
+                            // Give the host process temporary read access.
+                            String hostPkg = ctx.getHostInfo().getPackageName();
+                            ctx.grantUriPermission(
+                                hostPkg, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-                                        iconCache.put(img, icon); 
-                                    }
-                                }
-                            } catch (Exception e) {
-                                Log.w(TAG, "Failed to decode downloaded image", e);
-                            }
+                            // Build and cache the icon.
+                            CarIcon icon = new CarIcon.Builder(
+                                IconCompat.createWithContentUri(contentUri)).build();
+                            iconCache.put(img, icon);
 
                             // Rebuild the template now that (at least) one image is ready
                             try {
