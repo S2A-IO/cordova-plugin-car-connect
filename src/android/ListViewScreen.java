@@ -65,7 +65,8 @@ import java.util.Locale;
 public class ListViewScreen extends Screen {
     private static final String TAG = "CarConnect.ListScreen";
 
-    private final JSONObject payloadJson;
+    private JSONObject payloadJson;
+    private CallbackContext callback;
     private ListTemplate template;
 
     /**
@@ -79,6 +80,7 @@ public class ListViewScreen extends Screen {
                           @NonNull CallbackContext cb) throws JSONException {
         super(ctx);
         this.payloadJson = payload;
+        this.callback = cb;
         this.template = buildTemplate(ctx, payload, cb);
     }
 
@@ -199,5 +201,18 @@ public class ListViewScreen extends Screen {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Public refresh helper  (called from CarConnectService)
+     */
+    public void update(@NonNull JSONObject newPayload) {
+        try {
+            this.payloadJson = newPayload;
+            this.template    = buildTemplate(getCarContext(), newPayload, callback);
+            invalidate();          // tell the framework to call onGetTemplate() again
+        } catch (JSONException e) {
+            Log.w(TAG, "Bad payload for ListViewScreen.update", e);
+        }
     }
 }

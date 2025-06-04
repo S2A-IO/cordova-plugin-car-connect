@@ -41,11 +41,13 @@ import org.json.JSONObject;
  */
 public class DetailViewScreen extends Screen {
 
-    private final PaneTemplate template;
+    private CallbackContext callback;
+    private PaneTemplate template;
 
     public DetailViewScreen(@NonNull CarContext ctx, @NonNull JSONObject payload,
                             @NonNull CallbackContext cb) throws JSONException {
         super(ctx);
+        this.callback = cb;
         this.template = buildTemplate(payload, cb);
     }
 
@@ -124,5 +126,17 @@ public class DetailViewScreen extends Screen {
             });
 
         return builder.build();
+    }
+
+    /**
+     * Public refresh helper  (called from CarConnectService)
+     */
+    public void update(@NonNull JSONObject newPayload) {
+        try {
+            this.template = buildTemplate(newPayload, callback);
+            invalidate();              // ask framework to fetch new template
+        } catch (JSONException e) {
+            Log.w("CarConnect.Detail", "Bad payload for DetailViewScreen.update", e);
+        }
     }
 }
