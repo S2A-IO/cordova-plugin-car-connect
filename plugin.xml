@@ -80,17 +80,6 @@
                 </intent-filter>
             </service>
 
-            <!-- Declare the FileProvider we used to download and server the images. -->
-            <provider
-                android:name="androidx.core.content.FileProvider"
-                android:authorities="${applicationId}.carconnect.images"
-                android:exported="false"
-                android:grantUriPermissions="true">
-                <meta-data
-                    android:name="android.support.FILE_PROVIDER_PATHS"
-                    android:resource="@xml/carconnect_image_paths" />
-            </provider>
-
             <!-- Mark as car-app so Play Services validates -->
             <meta-data android:name="androidx.car.app.minCarApiLevel"
                 android:value="1" />

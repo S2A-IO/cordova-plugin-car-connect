@@ -44,7 +44,7 @@ public final class ImageCacheProvider {
         default void onError(@NonNull Exception e) { /* optional */ }
     }
 
-    private static final String AUTHORITY_SUFFIX = ".carconnect.images";
+    private static final String AUTHORITY_SUFFIX = ".cdv.core.file.provider";
 
     private ImageCacheProvider() { }
 
