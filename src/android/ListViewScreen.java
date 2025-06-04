@@ -154,8 +154,6 @@ public class ListViewScreen extends Screen {
 
         // Icon already cached → use it and exit early.
         if (img != null && iconCache.containsKey(img)) {
-            Log.d(TAG, "Icon cache hit: " + img);
-
             builder.setImage(iconCache.get(img), Row.IMAGE_TYPE_LARGE);
             return builder.build();
         }
@@ -167,47 +165,25 @@ public class ListViewScreen extends Screen {
             switch (scheme) {
                 case "http":
                 case "https":
-                    Log.d(TAG, "remote image: " + img);
-
                     // Asynchronously download, then refresh
                     ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
                         @Override 
                         public void onReady(@NonNull Uri contentUri) {
-                            Log.d(TAG, "icon ready: " + contentUri);
-
                             try (InputStream is = ctx.getContentResolver().openInputStream(contentUri)) {
-        Bitmap bmp = BitmapFactory.decodeStream(is);
+                                Bitmap bmp = BitmapFactory.decodeStream(is);
 
-        // scale to Auto's small-icon size (48 dp ≈ 48 px on mdpi host)
-        Bitmap scaled = Bitmap.createScaledBitmap(bmp, 80, 80, true);
+                                // scale to Auto's small-icon size (48 dp ≈ 48 px on mdpi host)
+                                Bitmap scaled = Bitmap.createScaledBitmap(bmp, 80, 80, true);
 
-        CarIcon icon = new CarIcon.Builder(
-                IconCompat.createWithBitmap(scaled)).build();
-        iconCache.put(img, icon);
+                                CarIcon icon = new CarIcon.Builder(
+                                    IconCompat.createWithBitmap(scaled)).build();
+                                iconCache.put(img, icon);
 
-        template = buildTemplate(ctx, payloadJson, cb);
-        invalidate();
-    } catch (Exception e) {
-        Log.w(TAG, "decode failed", e);
-    }
-
-                            // Give the host process temporary read access.
-                            /*String hostPkg = ctx.getHostInfo().getPackageName();
-                            ctx.grantUriPermission(
-                                hostPkg, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-                            // Build and cache the icon.
-                            CarIcon icon = new CarIcon.Builder(
-                                IconCompat.createWithContentUri(contentUri)).build();
-                            iconCache.put(img, icon);
-
-                            // Rebuild the template now that (at least) one image is ready
-                            try {
-                                template = ListViewScreen.this.buildTemplate(ctx, payloadJson, cb);
-                            } catch (JSONException ignored) { }
-
-                            // Ask the framework to re-query onGetTemplate()
-                            ListViewScreen.this.invalidate();*/
+                                template = buildTemplate(ctx, payloadJson, cb);
+                                invalidate();
+                            } catch (Exception e) {
+                                Log.w(TAG, "decode failed", e);
+                            }
                         }
                     });
                     break;
@@ -215,8 +191,6 @@ public class ListViewScreen extends Screen {
                 case "file":
                 case "content":
                 case "android.resource":
-                    Log.d(TAG, "local image: " + img);
-
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
                     builder.setImage(icon, Row.IMAGE_TYPE_ICON);

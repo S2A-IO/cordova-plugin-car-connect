@@ -127,8 +127,6 @@ public final class CarConnectService extends CarAppService {
     @Override
     @NonNull
     public HostValidator createHostValidator() {
-        Log.i(TAG, "Using ALLOW_ALL_HOSTS_VALIDATOR");
-
         return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR;
         /*
         // ------------------------------------------------------------------
