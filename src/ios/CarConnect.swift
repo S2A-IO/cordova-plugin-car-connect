@@ -20,6 +20,7 @@
 import Foundation
 import UIKit
 import AVFoundation
+import AVFAudio
 import CarPlay          // CarPlay symbols (CPListItem, …)
 
 @available(iOS 14.0, *)
@@ -57,7 +58,7 @@ class CarConnect: CDVPlugin {
     @objc(initialize:)
     private func initialize(_ cmd: CDVInvokedUrlCommand) {
         configureAudioSessionIfNeeded()
-        
+
         // 1️⃣ Close the previous global callback channel if we had one
         if let old = initCallbackId {
             let bye = CDVPluginResult(status: .noResult)
