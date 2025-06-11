@@ -120,6 +120,7 @@
 
         <!-- Ensure Swift support with correct version -->
         <preference name="UseSwiftLanguageVersion" default="5.0" />
+        <preference name="SwiftVersion" value="5.0"/>
 
         <!-- Optional: expose the same startup text in Info.plist so you can
              reference it from native code if desired. -->
