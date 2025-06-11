@@ -19,6 +19,7 @@
  */
 import Foundation
 import UIKit
+import AVFoundation
 import CarPlay          // CarPlay symbols (CPListItem, …)
 
 @available(iOS 14.0, *)
@@ -35,12 +36,16 @@ class CarConnect: CDVPlugin {
     private var listCallbackId:   String?
     private var detailCallbackId: String?
 
+    // Audio session initialization guard.
+    private static var audioSessionConfigured = false
+
     // ------------------------------------------------------------
     // Lifecycle
     // ------------------------------------------------------------
     override func pluginInitialize() {
         super.pluginInitialize()
         CarConnect.shared = self               // keep reference
+        configureAudioSessionIfNeeded()
     }
 
     // ------------------------------------------------------------
@@ -51,6 +56,8 @@ class CarConnect: CDVPlugin {
     // JS → CarConnect.init(…)
     @objc(initialize:)
     private func initialize(_ cmd: CDVInvokedUrlCommand) {
+        configureAudioSessionIfNeeded()
+        
         // 1️⃣ Close the previous global callback channel if we had one
         if let old = initCallbackId {
             let bye = CDVPluginResult(status: .noResult)
@@ -137,6 +144,25 @@ class CarConnect: CDVPlugin {
         res?.setKeepCallbackAs(false)
         commandDelegate.send(res, callbackId: cb)
         id = nil
+    }
+
+    /// Claim a playback session so Web audio follows the CarPlay route.
+    private func configureAudioSessionIfNeeded() {
+        guard !CarConnect.audioSessionConfigured else { return }
+
+        do {
+            let s = AVAudioSession.sharedInstance()
+            try s.setCategory(.playback,
+                          mode: .default,
+                          options: [.allowBluetooth,
+                                    .allowBluetoothA2DP,
+                                    .duckOthers])      // nav prompts stay audible
+            try s.setActive(true)
+
+            CarConnect.audioSessionConfigured = true
+        } catch {
+            NSLog("[CarConnect] ⚠️  audio-session error: %@", "\(error)")
+        }
     }
 
     static func closeListCallback()   { shared?.closeCallback(&shared!.listCallbackId) }
