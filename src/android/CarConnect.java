@@ -15,6 +15,12 @@ package io.s2a.connect;
 
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
+import android.os.Build;
+
+import androidx.annotation.Nullable;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -35,15 +41,61 @@ public class CarConnect extends CordovaPlugin {
     /* Intent extra key */
     private static final String EXTRA_PAYLOAD = "payload";
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Audio-focus members
+    // ─────────────────────────────────────────────────────────────────────────────
+    private AudioManager              audioMgr;
+    @Nullable
+    private AudioFocusRequest         focusReq;
+
     // ------------------------------------------------------------------
     //  Lifecycle
     // ------------------------------------------------------------------
 
     @Override
     protected void pluginInitialize() {
-        // Keep the car-app service alive so Android Auto can bind at any time
+        // 0️⃣ Start the foreground car-app service so AA can bind at any time
         Context ctx = this.cordova.getContext();
         ctx.startService(new Intent(ctx, CarConnectService.class));
+
+        // 1️⃣ Grab long-form audio focus so HTML-5 <audio> routes to car speakers
+        audioMgr = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
+
+        if (audioMgr != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                AudioAttributes attrs = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+
+                focusReq = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(attrs)
+                        .setOnAudioFocusChangeListener(focus -> { /* no-op */ })
+                        .build();
+
+                audioMgr.requestAudioFocus(focusReq);
+
+            } else {
+                // Legacy API < 26
+                audioMgr.requestAudioFocus(
+                        null,
+                        AudioManager.STREAM_MUSIC,
+                        AudioManager.AUDIOFOCUS_GAIN);
+            }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        // Release focus when the WebView is torn down
+        if (audioMgr != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && focusReq != null) {
+                audioMgr.abandonAudioFocusRequest(focusReq);
+            } else {
+                audioMgr.abandonAudioFocus(null);
+            }
+        }
+        super.onDestroy();
     }
 
     // ------------------------------------------------------------------
