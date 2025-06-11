@@ -153,8 +153,8 @@ class CarConnect: CDVPlugin {
 
         do {
             let s = AVAudioSession.sharedInstance()
-            try s.setCategory(.playback,
-                          mode: .default,
+            try s.setCategory(AVAudioSession.Category.playback,
+                          mode: AVAudioSession.Mode.default,
                           options: [.allowBluetooth,
                                     .allowBluetoothA2DP,
                                     .duckOthers])      // nav prompts stay audible
