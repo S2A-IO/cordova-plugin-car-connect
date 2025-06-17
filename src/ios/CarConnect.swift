@@ -46,7 +46,7 @@ class CarConnect: CDVPlugin {
     override func pluginInitialize() {
         super.pluginInitialize()
         CarConnect.shared = self               // keep reference
-        configureAudioSessionIfNeeded()
+        //configureAudioSessionIfNeeded()
     }
 
     // ------------------------------------------------------------
@@ -57,7 +57,7 @@ class CarConnect: CDVPlugin {
     // JS → CarConnect.init(…)
     @objc(initialize:)
     private func initialize(_ cmd: CDVInvokedUrlCommand) {
-        configureAudioSessionIfNeeded()
+        //configureAudioSessionIfNeeded()
 
         // 1️⃣ Close the previous global callback channel if we had one
         if let old = initCallbackId {
