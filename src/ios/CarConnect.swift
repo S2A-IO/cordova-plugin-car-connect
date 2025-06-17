@@ -46,7 +46,7 @@ class CarConnect: CDVPlugin {
     override func pluginInitialize() {
         super.pluginInitialize()
         CarConnect.shared = self               // keep reference
-        //configureAudioSessionIfNeeded()
+        configureAudioSessionIfNeeded()
     }
 
     // ------------------------------------------------------------
@@ -57,7 +57,7 @@ class CarConnect: CDVPlugin {
     // JS → CarConnect.init(…)
     @objc(initialize:)
     private func initialize(_ cmd: CDVInvokedUrlCommand) {
-        //configureAudioSessionIfNeeded()
+        configureAudioSessionIfNeeded()
 
         // 1️⃣ Close the previous global callback channel if we had one
         if let old = initCallbackId {
@@ -148,16 +148,23 @@ class CarConnect: CDVPlugin {
     }
 
     /// Claim a playback session so Web audio follows the CarPlay route.
+    /// Claim a playback session so Web audio follows the CarPlay route.
     private func configureAudioSessionIfNeeded() {
         guard !CarConnect.audioSessionConfigured else { return }
 
         do {
             let s = AVAudioSession.sharedInstance()
-            try s.setCategory(.playback,
-                          mode: .default,
-                          options: [.allowBluetooth,
-                                    .allowBluetoothA2DP,
-                                    .duckOthers])      // nav prompts stay audible
+
+            // ---- Swift-4.0 style API --------------------------------------
+            let opts: AVAudioSessionCategoryOptions = [
+                .allowBluetooth,
+                .allowBluetoothA2DP,
+                .duckOthers
+            ]
+            try s.setCategory(AVAudioSessionCategoryPlayback, with: opts)
+            try s.setMode(AVAudioSessionModeDefault)
+
+            // ---------------------------------------------------------------
             try s.setActive(true)
 
             CarConnect.audioSessionConfigured = true
