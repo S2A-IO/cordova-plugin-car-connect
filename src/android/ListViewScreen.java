@@ -53,6 +53,7 @@ import org.json.JSONObject;
 import org.json.JSONException;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -76,6 +77,8 @@ public class ListViewScreen extends Screen {
     // One CarIcon per image URL – survives template rebuilds
     private final Map<String, CarIcon> iconCache = new HashMap<>();
 
+    private final AtomicInteger epoch = new AtomicInteger(0);
+
     /**
      * Builds a {@link ListViewScreen} from the items JSON.
      *
@@ -88,6 +91,7 @@ public class ListViewScreen extends Screen {
         super(ctx);
         this.payloadJson = payload;
         this.callback = cb;
+        epoch.incrementAndGet();
         this.template = buildTemplate(ctx, payload, cb);
     }
 
@@ -135,6 +139,7 @@ public class ListViewScreen extends Screen {
      * {@link #invalidate()} so the UI refreshes.
      */
     private Row buildRow(CarContext ctx, JSONObject item, CallbackContext cb) throws JSONException {
+        final int rowEpoch = epoch.get();
         final String title = item.optString("title", "");
         final String desc  = item.optString("description", "");
         final String img   = item.optString("image", null);
@@ -170,6 +175,11 @@ public class ListViewScreen extends Screen {
                         @Override 
                         public void onReady(@NonNull Uri contentUri) {
                             try (InputStream is = ctx.getContentResolver().openInputStream(contentUri)) {
+                                if (rowEpoch != epoch.get()) {
+                                    Log.d(TAG, "drop stale image for " + img + " (epoch " + rowEpoch + " != " + epoch.get() + ")");
+                                    return;                               // payload changed; ignore old result
+                                }
+
                                 Bitmap bmp = BitmapFactory.decodeStream(is);
 
                                 // scale to Auto's small-icon size (48 dp ≈ 48 px on mdpi host)
@@ -209,9 +219,11 @@ public class ListViewScreen extends Screen {
     /**
      * Public refresh helper  (called from CarConnectService)
      */
-    public void update(@NonNull JSONObject newPayload) {
+    public void update(@NonNull JSONObject newPayload, @NonNull CallbackContext newCb) {
         try {
+            this.callback    = newCb;
             this.payloadJson = newPayload;
+            epoch.incrementAndGet();
             this.template    = buildTemplate(getCarContext(), newPayload, callback);
             invalidate();          // tell the framework to call onGetTemplate() again
         } catch (JSONException e) {

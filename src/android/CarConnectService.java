@@ -252,7 +252,7 @@ public final class CarConnectService extends CarAppService {
                     sm.popTo(marker);                         // ← fast path (screen exists)
                     Screen top = sm.getTop();
                     if (top instanceof ListViewScreen) {
-                        ((ListViewScreen) top).update(payload);   // refresh its content
+                        ((ListViewScreen) top).update(payload, CallbackRegistry.getListCallback());   // refresh its content
                     }
 
                     return;                                    // done
