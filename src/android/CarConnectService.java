@@ -280,7 +280,7 @@ public final class CarConnectService extends CarAppService {
                     sm.popTo(marker);                         // screen already on stack?
                     Screen top = sm.getTop();
                     if (top instanceof DetailViewScreen) {
-                        ((DetailViewScreen) top).update(payload);
+                        ((DetailViewScreen) top).update(payload, CallbackRegistry.getDetailCallback());
                     }
                     return;
                 }

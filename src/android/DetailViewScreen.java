@@ -133,8 +133,9 @@ public class DetailViewScreen extends Screen {
     /**
      * Public refresh helper  (called from CarConnectService)
      */
-    public void update(@NonNull JSONObject newPayload) {
+    public void update(@NonNull JSONObject newPayload, @NonNull CallbackContext newCb) {
         try {
+            this.callback = newCb;
             this.template = buildTemplate(newPayload, callback);
             invalidate();              // ask framework to fetch new template
         } catch (JSONException e) {
