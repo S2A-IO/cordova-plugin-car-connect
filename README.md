@@ -13,8 +13,9 @@
 |Plugin init (`init`) | Initializes plugin | Initializes plugin |
 |Native list view (`showListView`) | ✔ Jetpack Car‑App `ListTemplate` | ✔ `CPListTemplate` |
 |Native detail pane (`showDetailView`) | ✔ `PaneTemplate` | ✔ `CPInformationTemplate` |
-|Live interaction events | List‑row taps | Button presses |
-|Connection status (`isConnected`) | Returns **0** / **2** | Returns **0** / **1** |
+|Live interaction events | List-row taps / Button presses | Button presses |
+|Back lifecycle (`onBack`) | ✔ notify, with **optional intercept** | Notify (intercept coming soon) |
+|Screen lifecycle (`onAppear`/`onDisappear`) | ✔ | Coming soon ||Connection status (`isConnected`) | Returns **0** / **2** | Returns **0** / **1** |
 |Navigate back to previous screen (`goBack`) | Navigate back | Navigate back |
 
 > ℹ️ No UI WebViews are shown in‑car — every screen is rendered by the platform’s own HMI for a consistent, distraction‑optimised experience.
@@ -80,21 +81,33 @@ CarConnect.isConnected().then(state => {
 });
 
 // Show a selectable list
-CarConnect.showListView('Screen title', [
-  {
-    id: 1,
-    image: 'https://www.riksof.com/icon-60.png', 
-    title: 'Song A',
-    description: 'Tap to see details',
+const listHandle = CarConnect.showListView(
+  'Screen title',
+  [
+    {
+      id: 1,
+      image: 'https://www.riksof.com/icon-60.png',
+      title: 'Song A',
+      description: 'Tap to see details',
+    },
+    // …up to ~40 items (HMI limit)
+  ],
+  itemJson => {
+    const item = JSON.parse(itemJson);
+    console.log('User chose', item);
   },
-  // …up to ~40 items (HMI limit)
-], itemJson => {
-  const item = JSON.parse(itemJson);
-  console.log('User chose', item);
-});
+  {
+    onBack: (e) => console.log('List back:', e.screenId, e.reason),
+    onAppear: (id) => console.log('List appear', id),
+    onDisappear: (id) => console.log('List disappear', id),
+    // Set to true to prevent the default pop; you will call goBack() yourself
+    interceptBack: false,
+    onError: (err) => console.error('List error', err)
+  }
+);
 
 // Show a detail pane with buttons
-CarConnect.showDetailView(
+const detailHandle = CarConnect.showDetailView(
   'Screen title',
   [
     { key: 'Artist', value: 'Hans Zimmer' },
@@ -104,9 +117,15 @@ CarConnect.showDetailView(
     { id: 'play',  type: 'primary',   text: 'Play' },
     { id: 'share', type: 'secondary', text: 'Share' },
   ],
-  btnJson => {
+  (btnJson) => {
     const btn = JSON.parse(btnJson);
     console.log('Pressed', btn.id);
+  },
+  {
+    onBack: (e) => console.log('Detail back:', e.screenId, e.reason),
+    // Example: intercept back to confirm before leaving
+    // interceptBack: true,
+    onError: (err) => console.error('Detail error', err)
   }
 );
 

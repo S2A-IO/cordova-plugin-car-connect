@@ -73,6 +73,7 @@ public final class CarConnectService extends CarAppService {
     private static final String ACTION_SHOW_LIST_VIEW   = CarConnect.ACTION_SHOW_LIST_VIEW;
     private static final String ACTION_SHOW_DETAIL_VIEW = CarConnect.ACTION_SHOW_DETAIL_VIEW;
     private static final String ACTION_GO_BACK = CarConnect.ACTION_GO_BACK;
+    private static final String ACTION_CLOSE_SCREEN = CarConnect.ACTION_CLOSE_SCREEN;
 
     private static final String LIST_MARKER_PREFIX   = "list:CarConnect";
     private static final String DETAIL_MARKER_PREFIX = "detail:CarConnect"; 
@@ -113,6 +114,9 @@ public final class CarConnectService extends CarAppService {
             }
             if (ACTION_GO_BACK.equals(action) && currentSession != null) {
                 currentSession.goBack();
+            }
+            if (ACTION_CLOSE_SCREEN.equals(action) && currentSession != null) {
+                currentSession.closeScreen(json);
             }
         }
         return START_STICKY;
@@ -295,6 +299,31 @@ public final class CarConnectService extends CarAppService {
         void goBack() {
             ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
             sm.pop();
+        }
+
+        void closeScreen(String json) {
+            try {
+                JSONObject p = new JSONObject(json == null ? "{}" : json);
+                String targetId = p.optString("screenId", "");
+                if (targetId.isEmpty()) return;
+
+                ScreenManager sm = getCarContext().getCarService(ScreenManager.class);
+                Screen top = sm.getTop();
+                if (top instanceof ListViewScreen) {
+                    if (((ListViewScreen) top).matchesId(targetId)) {
+                        sm.pop();
+                        return;
+                    }
+                }
+                // Optional: walk stack to find and pop-to the target, then pop.
+                for (Screen s : sm.getScreenStack()) {
+                    if (s instanceof ListViewScreen && ((ListViewScreen) s).matchesId(targetId)) {
+                        sm.popTo(s.getMarker());
+                        sm.pop();
+                        return;
+                    }
+                }
+            } catch (JSONException ignored) { }
         }
 
         /**

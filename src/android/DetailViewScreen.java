@@ -24,6 +24,7 @@ package io.s2a.connect;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
 import androidx.car.app.model.Action;
@@ -46,10 +47,15 @@ public class DetailViewScreen extends Screen {
     private CallbackContext callback;
     private PaneTemplate template;
 
+    // Screen identity & back options (from JS payload)
+    private String screenId = "";
+    private boolean interceptBack = false;
+
     public DetailViewScreen(@NonNull CarContext ctx, @NonNull JSONObject payload,
                             @NonNull CallbackContext cb) throws JSONException {
         super(ctx);
         this.callback = cb;
+        parseMeta(payload);
         this.template = buildTemplate(payload, cb);
     }
 
@@ -57,6 +63,30 @@ public class DetailViewScreen extends Screen {
     @Override
     public androidx.car.app.model.Template onGetTemplate() {
         return template;
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Lifecycle → emit screen:appear / screen:disappear to init()
+    // ──────────────────────────────────────────────────────────────
+    @Override
+    public void onStart() {
+        super.onStart();
+        emitInitEvent("screen:appear", null);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        emitInitEvent("screen:disappear", null);
+    }
+
+    // Intercept/notify back presses
+    @Override
+    public boolean onBackPressed() {
+        // reason 'nav' (toolbar/back affordance in AA)
+        emitInitEvent("screen:back", "nav");
+        // If interceptBack=true → consume (JS will call goBack() explicitly)
+        return interceptBack;
     }
 
     // ------------------------------------------------------------------
@@ -136,10 +166,44 @@ public class DetailViewScreen extends Screen {
     public void update(@NonNull JSONObject newPayload, @NonNull CallbackContext newCb) {
         try {
             this.callback = newCb;
+            parseMeta(newPayload);
             this.template = buildTemplate(newPayload, callback);
             invalidate();              // ask framework to fetch new template
         } catch (JSONException e) {
             Log.w("CarConnect.Detail", "Bad payload for DetailViewScreen.update", e);
         }
+    }
+
+    /** Match against a JS ScreenHandle id */
+    public boolean matchesId(@NonNull String id) {
+        return id.equals(this.screenId);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Metadata parsing & event emission
+    // ──────────────────────────────────────────────────────────────
+    private void parseMeta(JSONObject payload) {
+        // Screen id (required for JS correlation)
+        this.screenId = payload.optString("screenId", "");
+        // Back options
+        JSONObject back = payload.optJSONObject("back");
+        if (back != null) {
+            this.interceptBack = back.optBoolean("intercept", false);
+        }
+    }
+
+    private void emitInitEvent(@NonNull String type, @Nullable String reason) {
+        CallbackContext initCb = CallbackRegistry.getInitCallback();
+        if (initCb == null) return;
+        try {
+            JSONObject event = new JSONObject();
+            event.put("type", type);
+            if (!screenId.isEmpty()) event.put("screenId", screenId);
+            if (reason != null) event.put("reason", reason);
+
+            PluginResult pr = new PluginResult(PluginResult.Status.OK, event.toString());
+            pr.setKeepCallback(true);
+            initCb.sendPluginResult(pr);
+        } catch (Exception ignored) { }
     }
 }

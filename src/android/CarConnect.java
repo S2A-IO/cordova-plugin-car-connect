@@ -37,6 +37,7 @@ public class CarConnect extends CordovaPlugin {
     public static final String ACTION_SHOW_LIST_VIEW = "io.s2a.connect.SHOW_LIST_VIEW";
     public static final String ACTION_SHOW_DETAIL_VIEW = "io.s2a.connect.SHOW_DETAIL_VIEW";
     public static final String ACTION_GO_BACK = "io.s2a.connect.GO_BACK";
+    public static final String ACTION_CLOSE_SCREEN = "io.s2a.connect.CLOSE_SCREEN";
 
     /* Intent extra key */
     private static final String EXTRA_PAYLOAD = "payload";
@@ -127,6 +128,10 @@ public class CarConnect extends CordovaPlugin {
                 goBack(cb);
                 return true;
 
+            case "closeScreen":
+                closeScreen(args.optJSONObject(0), cb);
+                return true;
+
             default:
                 return false;   // Unknown action
         }
@@ -166,6 +171,11 @@ public class CarConnect extends CordovaPlugin {
     private void goBack(CallbackContext cb) {
         forwardToService(ACTION_GO_BACK, null);
         cb.success();                      // nothing to return
+    }
+
+    private void closeScreen(JSONObject payload, CallbackContext cb) {
+        forwardToService(ACTION_CLOSE_SCREEN, payload);
+        cb.success();
     }
 
     // ------------------------------------------------------------------

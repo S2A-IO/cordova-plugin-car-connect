@@ -74,6 +74,11 @@ public class ListViewScreen extends Screen {
     private CallbackContext callback;
     private ListTemplate template;
 
+    // Screen identity & back options (from JS payload)
+    private String screenId = "";
+    private boolean interceptBack = false;
+    private String title = "Select an item";
+
     // One CarIcon per image URL – survives template rebuilds
     private final Map<String, CarIcon> iconCache = new HashMap<>();
 
@@ -91,6 +96,7 @@ public class ListViewScreen extends Screen {
         super(ctx);
         this.payloadJson = payload;
         this.callback = cb;
+        parseMeta(payload);
         epoch.incrementAndGet();
         this.template = buildTemplate(ctx, payload, cb);
     }
@@ -101,9 +107,44 @@ public class ListViewScreen extends Screen {
         return template;
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // Lifecycle → emit screen:appear / screen:disappear to init()
+    // ──────────────────────────────────────────────────────────────
+    @Override
+    public void onStart() {
+        super.onStart();
+        emitInitEvent("screen:appear", null);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        emitInitEvent("screen:disappear", null);
+    }
+
+    // Intercept/notify back presses
+    @Override
+    public boolean onBackPressed() {
+        // reason 'nav' (toolbar/back affordance in AA)
+        emitInitEvent("screen:back", "nav");
+        // If interceptBack=true → consume (JS will call goBack() explicitly)
+        return interceptBack;
+    }
+
     // ------------------------------------------------------------------
     //  Helpers
     // ------------------------------------------------------------------
+    private void parseMeta(JSONObject payload) {
+        // Title
+        this.title = payload.optString("title", this.title);
+        // Screen id (required for JS correlation)
+        this.screenId = payload.optString("screenId", "");
+        // Back options
+        JSONObject back = payload.optJSONObject("back");
+        if (back != null) {
+            this.interceptBack = back.optBoolean("intercept", false);
+        }
+    }
 
     private ListTemplate buildTemplate(CarContext ctx, JSONObject payload,
                                               CallbackContext cb) throws JSONException {
@@ -129,7 +170,7 @@ public class ListViewScreen extends Screen {
 
         return new ListTemplate.Builder()
                 .setSingleList(listBuilder.build())
-                .setTitle("Select an item")
+                .setTitle(title)
                 .build();
     }
 
@@ -223,11 +264,35 @@ public class ListViewScreen extends Screen {
         try {
             this.callback    = newCb;
             this.payloadJson = newPayload;
+            parseMeta(newPayload);
             epoch.incrementAndGet();
             this.template    = buildTemplate(getCarContext(), newPayload, callback);
             invalidate();          // tell the framework to call onGetTemplate() again
         } catch (JSONException e) {
             Log.w(TAG, "Bad payload for ListViewScreen.update", e);
         }
+    }
+
+    /** Match against a JS ScreenHandle id */
+    public boolean matchesId(@NonNull String id) {
+        return id.equals(this.screenId);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // Event emission to the init callback (typed envelope)
+    // ──────────────────────────────────────────────────────────────
+    private void emitInitEvent(@NonNull String type, @Nullable String reason) {
+        CallbackContext initCb = CallbackRegistry.getInitCallback();
+        if (initCb == null) return;
+        try {
+            JSONObject event = new JSONObject();
+            event.put("type", type);
+            if (!screenId.isEmpty()) event.put("screenId", screenId);
+            if (reason != null) event.put("reason", reason);
+
+            PluginResult pr = new PluginResult(PluginResult.Status.OK, event.toString());
+            pr.setKeepCallback(true);
+            initCb.sendPluginResult(pr);
+        } catch (Exception ignored) { }
     }
 }
