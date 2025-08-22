@@ -32,6 +32,8 @@ import androidx.car.app.model.ActionStrip;
 import androidx.car.app.model.Pane;
 import androidx.car.app.model.PaneTemplate;
 import androidx.car.app.model.Row;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -56,6 +58,17 @@ public class DetailViewScreen extends Screen {
         super(ctx);
         this.callback = cb;
         parseMeta(payload);
+
+        // Lifecycle-driven appear/disappear events
+        getLifecycle().addObserver(new DefaultLifecycleObserver() {
+            @Override public void onStart(@NonNull LifecycleOwner owner) {
+                emitInitEvent("screen:appear", null);
+            }
+            @Override public void onStop(@NonNull LifecycleOwner owner) {
+                emitInitEvent("screen:disappear", null);
+            }
+        });
+
         this.template = buildTemplate(payload, cb);
     }
 
@@ -63,21 +76,6 @@ public class DetailViewScreen extends Screen {
     @Override
     public androidx.car.app.model.Template onGetTemplate() {
         return template;
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // Lifecycle → emit screen:appear / screen:disappear to init()
-    // ──────────────────────────────────────────────────────────────
-    @Override
-    public void onStart() {
-        super.onStart();
-        emitInitEvent("screen:appear", null);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        emitInitEvent("screen:disappear", null);
     }
 
     // Intercept/notify back presses

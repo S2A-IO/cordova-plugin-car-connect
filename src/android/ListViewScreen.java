@@ -37,13 +37,17 @@ import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
+import androidx.car.app.model.Action;
 import androidx.car.app.model.CarIcon;
 import androidx.car.app.model.ItemList;
 import androidx.car.app.model.ListTemplate;
 import androidx.car.app.model.Row;
 import androidx.core.graphics.drawable.IconCompat;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -97,6 +101,17 @@ public class ListViewScreen extends Screen {
         this.payloadJson = payload;
         this.callback = cb;
         parseMeta(payload);
+
+        // Lifecycle-driven appear/disappear events
+        getLifecycle().addObserver(new DefaultLifecycleObserver() {
+            @Override public void onStart(@NonNull LifecycleOwner owner) {
+                emitInitEvent("screen:appear", null);
+            }
+            @Override public void onStop(@NonNull LifecycleOwner owner) {
+                emitInitEvent("screen:disappear", null);
+            }
+        });
+
         epoch.incrementAndGet();
         this.template = buildTemplate(ctx, payload, cb);
     }
@@ -107,27 +122,12 @@ public class ListViewScreen extends Screen {
         return template;
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Lifecycle → emit screen:appear / screen:disappear to init()
-    // ──────────────────────────────────────────────────────────────
-    @Override
-    public void onStart() {
-        super.onStart();
-        emitInitEvent("screen:appear", null);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        emitInitEvent("screen:disappear", null);
-    }
-
-    // Intercept/notify back presses
+    // Intercept/notify back presses (Car App 1.4.0+)
     @Override
     public boolean onBackPressed() {
-        // reason 'nav' (toolbar/back affordance in AA)
+        // Header back in AA → treat as 'nav'
         emitInitEvent("screen:back", "nav");
-        // If interceptBack=true → consume (JS will call goBack() explicitly)
+        // If interceptBack=true → consume; JS will call goBack()/closeScreen() explicitly
         return interceptBack;
     }
 
@@ -171,6 +171,7 @@ public class ListViewScreen extends Screen {
         return new ListTemplate.Builder()
                 .setSingleList(listBuilder.build())
                 .setTitle(title)
+                .setHeaderAction(Action.BACK)
                 .build();
     }
 
