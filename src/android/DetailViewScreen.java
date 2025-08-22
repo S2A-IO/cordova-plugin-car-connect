@@ -25,6 +25,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.activity.OnBackPressedCallback;
 import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
 import androidx.car.app.model.Action;
@@ -68,6 +69,25 @@ public class DetailViewScreen extends Screen {
                 emitInitEvent("screen:disappear", null);
             }
         });
+        // Register back handler via CarContext's dispatcher (Car App 1.4.0+)
+        OnBackPressedCallback backCallback = new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                // Single pipeline for header/hardware back in the host
+                emitInitEvent("screen:back", "nav");
+                if (interceptBack) {
+                    // consume; JS will decide when to pop via goBack()/closeScreen()
+                    return;
+                }
+                // pass through to default behavior (pop current screen)
+                setEnabled(false);
+                try {
+                    getCarContext().getOnBackPressedDispatcher().onBackPressed();
+                } finally {
+                    setEnabled(true);
+                }
+            }
+        };
+        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
 
         this.template = buildTemplate(payload, cb);
     }
@@ -76,15 +96,6 @@ public class DetailViewScreen extends Screen {
     @Override
     public androidx.car.app.model.Template onGetTemplate() {
         return template;
-    }
-
-    // Intercept/notify back presses
-    @Override
-    public boolean onBackPressed() {
-        // reason 'nav' (toolbar/back affordance in AA)
-        emitInitEvent("screen:back", "nav");
-        // If interceptBack=true → consume (JS will call goBack() explicitly)
-        return interceptBack;
     }
 
     // ------------------------------------------------------------------

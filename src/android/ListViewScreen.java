@@ -38,6 +38,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.activity.OnBackPressedCallback;
 import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
 import androidx.car.app.model.Action;
@@ -101,18 +102,41 @@ public class ListViewScreen extends Screen {
         this.payloadJson = payload;
         this.callback = cb;
         parseMeta(payload);
+        epoch.incrementAndGet();
 
-        // Lifecycle-driven appear/disappear events
+        // Lifecycle-aware appear/disappear events
         getLifecycle().addObserver(new DefaultLifecycleObserver() {
-            @Override public void onStart(@NonNull LifecycleOwner owner) {
+            @Override
+            public void onStart(@NonNull LifecycleOwner owner) {
                 emitInitEvent("screen:appear", null);
             }
-            @Override public void onStop(@NonNull LifecycleOwner owner) {
+            @Override
+            public void onStop(@NonNull LifecycleOwner owner) {
                 emitInitEvent("screen:disappear", null);
             }
         });
 
-        epoch.incrementAndGet();
+        // Register back handler via CarContext's dispatcher (Car App 1.4.0)
+        OnBackPressedCallback backCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Single pipeline for header/hardware back in the host
+                emitInitEvent("screen:back", "nav");
+                if (interceptBack) {
+                    // consume; app JS decides when to pop via goBack()
+                    return;
+                }
+                // pass through to default behavior (pop current screen)
+                setEnabled(false);
+                try {
+                    getCarContext().getOnBackPressedDispatcher().onBackPressed();
+                } finally {
+                    setEnabled(true);
+                }
+            }
+        };
+        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
+
         this.template = buildTemplate(ctx, payload, cb);
     }
 
@@ -120,15 +144,6 @@ public class ListViewScreen extends Screen {
     @Override
     public androidx.car.app.model.Template onGetTemplate() {
         return template;
-    }
-
-    // Intercept/notify back presses (Car App 1.4.0+)
-    @Override
-    public boolean onBackPressed() {
-        // Header back in AA → treat as 'nav'
-        emitInitEvent("screen:back", "nav");
-        // If interceptBack=true → consume; JS will call goBack()/closeScreen() explicitly
-        return interceptBack;
     }
 
     // ------------------------------------------------------------------
