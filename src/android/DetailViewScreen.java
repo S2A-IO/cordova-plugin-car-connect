@@ -51,8 +51,6 @@ public class DetailViewScreen extends Screen {
     private PaneTemplate template;
 
     // Screen identity & back options (from JS payload)
-    private String screenId = "";
-    private boolean interceptBack = false;
     private OnBackPressedCallback backCallback;
 
     private static final String TAG = "CarConnect.Detail";
