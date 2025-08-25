@@ -105,25 +105,19 @@ public class ListViewScreen extends Screen {
         parseMeta(payload);
         epoch.incrementAndGet();
 
-        // Lifecycle-aware appear/disappear; only register a back override if intercepting
-        getLifecycle().addObserver(new DefaultLifecycleObserver() {
-            @Override public void onStart(@NonNull LifecycleOwner owner) {
-                emitInitEvent("screen:appear", null);
-                if (interceptBack) {
-                    backCallback = new OnBackPressedCallback(true) {
-                        @Override public void handleOnBackPressed() {
-                            // Consume and just notify; JS decides when to pop
-                            emitInitEvent("screen:back", "nav");
-                        }
-                    };
-                    getCarContext().getOnBackPressedDispatcher().addCallback(ListViewScreen.this, backCallback);
-                }
+        Log.d(TAG, "ctor(): screenId=" + screenId + " title=\"" + title + "\" interceptBack=" + interceptBack);
+
+        // Back handling via dispatcher (Car App 1.4+)
+        backCallback = new OnBackPressedCallback(interceptBack) {
+            @Override public void handleOnBackPressed() {
+                Log.d(TAG, "onBackPressedDispatcher: callback fired (interceptBack=" + interceptBack + ") screenId=" + screenId);
+                // Header back pressed → report to init() channel
+                emitInitEvent("screen:back", "nav");
+                // Do nothing else; with callback enabled, we consume and JS can decide what to do next.
             }
-            @Override public void onStop(@NonNull LifecycleOwner owner) {
-                emitInitEvent("screen:disappear", null);
-                if (backCallback != null) { backCallback.remove(); backCallback = null; }
-            }
-        });
+        };
+        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
+        Log.d(TAG, "Registered back callback; enabled=" + backCallback.isEnabled());
 
         this.template = buildTemplate(ctx, payload, cb);
     }
@@ -131,6 +125,7 @@ public class ListViewScreen extends Screen {
     @NonNull
     @Override
     public androidx.car.app.model.Template onGetTemplate() {
+        Log.d(TAG, "onGetTemplate(): screenId=" + screenId + " interceptBack=" + interceptBack);
         return template;
     }
 
@@ -147,6 +142,8 @@ public class ListViewScreen extends Screen {
         if (back != null) {
             this.interceptBack = back.optBoolean("intercept", false);
         }
+
+        Log.d(TAG, "parseMeta(): title=\"" + this.title + "\" screenId=" + this.screenId + " interceptBack=" + this.interceptBack);
     }
 
     private ListTemplate buildTemplate(CarContext ctx, JSONObject payload,
@@ -171,10 +168,13 @@ public class ListViewScreen extends Screen {
         }
         listBuilder.setNoItemsMessage("No items available");
 
+        Action headerAction = interceptBack ? Action.BACK : Action.APP_ICON;
+        Log.d(TAG, "buildTemplate(): items=" + rows.size() + " headerAction=" + (interceptBack ? "BACK" : "APP_ICON"));
+
         return new ListTemplate.Builder()
                 .setSingleList(listBuilder.build())
                 .setTitle(title)
-                .setHeaderAction(Action.BACK)
+                .setHeaderAction(headerAction)
                 .build();
     }
 
@@ -189,6 +189,7 @@ public class ListViewScreen extends Screen {
         final String desc  = item.optString("description", "");
         final String img   = item.optString("image", null);
 
+        Log.d(TAG, "buildRow(): title=\"" + title + "\" image=" + img);
         final Row.Builder builder = new Row.Builder()
                 .setTitle(title)
                 .addText(desc);
@@ -204,6 +205,7 @@ public class ListViewScreen extends Screen {
 
         // Icon already cached → use it and exit early.
         if (img != null && iconCache.containsKey(img)) {
+            Log.d(TAG, "iconCache HIT for " + img);
             builder.setImage(iconCache.get(img), Row.IMAGE_TYPE_LARGE);
             return builder.build();
         }
@@ -215,6 +217,8 @@ public class ListViewScreen extends Screen {
             switch (scheme) {
                 case "http":
                 case "https":
+                    Log.d(TAG, "fetch http(s) image: " + img);
+
                     // Asynchronously download, then refresh
                     ImageCacheProvider.fetch(ctx, img, new ImageCacheProvider.Callback() {
                         @Override 
@@ -234,6 +238,7 @@ public class ListViewScreen extends Screen {
                                     IconCompat.createWithBitmap(scaled)).build();
                                 iconCache.put(img, icon);
 
+                                Log.d(TAG, "image ready → rebuild template for " + img);
                                 template = buildTemplate(ctx, payloadJson, cb);
                                 invalidate();
                             } catch (Exception e) {
@@ -246,6 +251,7 @@ public class ListViewScreen extends Screen {
                 case "file":
                 case "content":
                 case "android.resource":
+                    Log.d(TAG, "use local/content image: " + uri);
                     CarIcon icon = new CarIcon.Builder(
                             IconCompat.createWithContentUri(uri)).build();
                     builder.setImage(icon, Row.IMAGE_TYPE_ICON);
@@ -254,6 +260,7 @@ public class ListViewScreen extends Screen {
                     break;
 
                 default:
+                    Log.d(TAG, "unsupported image scheme: " + scheme);
                     // Unsupported scheme – leave row without image
             }
         }
@@ -269,8 +276,13 @@ public class ListViewScreen extends Screen {
             this.callback    = newCb;
             this.payloadJson = newPayload;
             parseMeta(newPayload);
+            if (backCallback != null) {
+                backCallback.setEnabled(interceptBack);
+                Log.d(TAG, "update(): backCallback enabled=" + backCallback.isEnabled());
+            }
             epoch.incrementAndGet();
             this.template    = buildTemplate(getCarContext(), newPayload, callback);
+            Log.d(TAG, "update(): rebuilt template; title=\"" + title + "\" interceptBack=" + interceptBack);
             invalidate();          // tell the framework to call onGetTemplate() again
         } catch (JSONException e) {
             Log.w(TAG, "Bad payload for ListViewScreen.update", e);
@@ -297,6 +309,7 @@ public class ListViewScreen extends Screen {
             PluginResult pr = new PluginResult(PluginResult.Status.OK, event.toString());
             pr.setKeepCallback(true);
             initCb.sendPluginResult(pr);
+            Log.d(TAG, "emitInitEvent(): " + event.toString());
         } catch (Exception ignored) { }
     }
 }

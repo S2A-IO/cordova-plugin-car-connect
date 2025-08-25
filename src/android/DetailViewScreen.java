@@ -55,38 +55,26 @@ public class DetailViewScreen extends Screen {
     private boolean interceptBack = false;
     private OnBackPressedCallback backCallback;
 
+    private static final String TAG = "CarConnect.Detail";
+    private boolean interceptBack = false;
+    private String screenId = "";
+    private String title = "Details";
+
     public DetailViewScreen(@NonNull CarContext ctx, @NonNull JSONObject payload,
                             @NonNull CallbackContext cb) throws JSONException {
         super(ctx);
         this.callback = cb;
         parseMeta(payload);
 
-        // Lifecycle-driven appear/disappear events; only register a back override if intercepting
-        getLifecycle().addObserver(new DefaultLifecycleObserver() {
-            @Override public void onStart(@NonNull LifecycleOwner owner) {
-                emitInitEvent("screen:appear", null);
-                if (interceptBack) {
-                    backCallback = new OnBackPressedCallback(true) {
-                        @Override public void handleOnBackPressed() {
-                            // Consume and just notify; JS decides when to pop
-                            emitInitEvent("screen:back", "nav");
-                        }
-                    };
-                    getCarContext().getOnBackPressedDispatcher().addCallback(DetailViewScreen.this, backCallback);
-                }
-            }
-            @Override public void onStop(@NonNull LifecycleOwner owner) {
-                emitInitEvent("screen:disappear", null);
-                if (backCallback != null) { backCallback.remove(); backCallback = null; }
-            }
-        });
-
-        this.template = buildTemplate(payload, cb);
+        Log.d(TAG, "ctor(): screenId=" + screenId + " title=\"" + title + "\" interceptBack=" + interceptBack);
+        installBackDispatcher();
+        this.template = buildTemplate(payload, cb, interceptBack, title);
     }
 
     @NonNull
     @Override
     public androidx.car.app.model.Template onGetTemplate() {
+        Log.d(TAG, "onGetTemplate(): screenId=" + screenId + " interceptBack=" + interceptBack);
         return template;
     }
 
@@ -94,7 +82,8 @@ public class DetailViewScreen extends Screen {
     //  Builders
     // ------------------------------------------------------------------
 
-    private static PaneTemplate buildTemplate(JSONObject payload, CallbackContext cb) throws JSONException {
+    private static PaneTemplate buildTemplate(JSONObject payload, CallbackContext cb,
+                                              boolean interceptBack, String title) throws JSONException {
         JSONArray pairsArr = payload.optJSONArray("pairs");
         if (pairsArr == null || pairsArr.length() == 0) {
             throw new JSONException("pairs array missing or empty in showDetailView payload");
@@ -134,10 +123,15 @@ public class DetailViewScreen extends Screen {
             pane.addAction(primary);             // put primary in the Pane
         }
 
+        Action headerAction = interceptBack ? Action.BACK : Action.APP_ICON;
+        Log.d(TAG, "buildTemplate(): pairs=" + (pairsArr != null ? pairsArr.length() : 0)
+                + " buttons=" + (buttonsArr != null ? buttonsArr.length() : 0)
+                + " headerAction=" + (interceptBack ? "BACK" : "APP_ICON"));
+
         PaneTemplate.Builder tmplBuilder =
             new PaneTemplate.Builder(pane.build())
-                .setTitle(payload.optString("title", "Details"))
-                .setHeaderAction(Action.BACK);
+                .setTitle(title)
+                .setHeaderAction(headerAction);
 
         // Only add the strip if there is at least one action in it:
         if (hasStripAction) {
@@ -153,6 +147,7 @@ public class DetailViewScreen extends Screen {
         Action.Builder builder = new Action.Builder()
             .setTitle(text)
             .setOnClickListener(() -> {
+                Log.d(TAG, "button pressed: " + btn.toString());
                 PluginResult pr = new PluginResult(PluginResult.Status.OK, btn.toString());
                 pr.setKeepCallback(true);
                 cb.sendPluginResult(pr);
@@ -168,7 +163,12 @@ public class DetailViewScreen extends Screen {
         try {
             this.callback = newCb;
             parseMeta(newPayload);
-            this.template = buildTemplate(newPayload, callback);
+            if (backCallback != null) {
+                backCallback.setEnabled(interceptBack);
+                Log.d(TAG, "update(): backCallback enabled=" + backCallback.isEnabled());
+            }
+            this.template = buildTemplate(newPayload, callback, interceptBack, title);
+            Log.d(TAG, "update(): rebuilt template; title=\"" + title + "\" interceptBack=" + interceptBack);
             invalidate();              // ask framework to fetch new template
         } catch (JSONException e) {
             Log.w("CarConnect.Detail", "Bad payload for DetailViewScreen.update", e);
@@ -180,17 +180,29 @@ public class DetailViewScreen extends Screen {
         return id.equals(this.screenId);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Metadata parsing & event emission
-    // ──────────────────────────────────────────────────────────────
+    // ------------------------------------------------------------------
+    //  Back dispatcher + metadata + event emission
+    // ------------------------------------------------------------------
+    private void installBackDispatcher() {
+        backCallback = new OnBackPressedCallback(interceptBack) {
+            @Override public void handleOnBackPressed() {
+                Log.d(TAG, "onBackPressedDispatcher: callback fired (interceptBack=" + interceptBack + ") screenId=" + screenId);
+                emitInitEvent("screen:back", "nav");
+                // With callback enabled we consume; JS can decide what to do.
+            }
+        };
+        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
+        Log.d(TAG, "Registered back callback; enabled=" + backCallback.isEnabled());
+    }
+
     private void parseMeta(JSONObject payload) {
-        // Screen id (required for JS correlation)
+        this.title = payload.optString("title", this.title);
         this.screenId = payload.optString("screenId", "");
-        // Back options
         JSONObject back = payload.optJSONObject("back");
         if (back != null) {
             this.interceptBack = back.optBoolean("intercept", false);
         }
+        Log.d(TAG, "parseMeta(): title=\"" + this.title + "\" screenId=" + this.screenId + " interceptBack=" + this.interceptBack);
     }
 
     private void emitInitEvent(@NonNull String type, @Nullable String reason) {
@@ -201,10 +213,10 @@ public class DetailViewScreen extends Screen {
             event.put("type", type);
             if (!screenId.isEmpty()) event.put("screenId", screenId);
             if (reason != null) event.put("reason", reason);
-
             PluginResult pr = new PluginResult(PluginResult.Status.OK, event.toString());
             pr.setKeepCallback(true);
             initCb.sendPluginResult(pr);
+            Log.d(TAG, "emitInitEvent(): " + event.toString());
         } catch (Exception ignored) { }
     }
 }
