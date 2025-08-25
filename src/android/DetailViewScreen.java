@@ -28,13 +28,13 @@ import androidx.annotation.Nullable;
 import androidx.activity.OnBackPressedCallback;
 import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
+import androidx.car.app.ScreenManager;
 import androidx.car.app.model.Action;
 import androidx.car.app.model.ActionStrip;
 import androidx.car.app.model.Pane;
 import androidx.car.app.model.PaneTemplate;
 import androidx.car.app.model.Row;
 import androidx.lifecycle.DefaultLifecycleObserver;
-import androidx.lifecycle.LifecycleOwner;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -63,10 +63,24 @@ public class DetailViewScreen extends Screen {
         super(ctx);
         this.callback = cb;
         parseMeta(payload);
-
-        Log.d(TAG, "ctor(): screenId=" + screenId + " title=\"" + title + "\" interceptBack=" + interceptBack);
-        installBackDispatcher();
-        this.template = buildTemplate(payload, cb, interceptBack, title);
+        this.template = buildTemplate(payload, cb);
+       
+        // Always enabled so we get notified even when not intercepting
+        backCallback = new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                Log.d("CarConnect.Detail", "backCallback(): interceptBack=" + interceptBack + " screenId=" + screenId);
+                emitInitEvent("screen:back", "nav");
+                if (!interceptBack) {
+                    try {
+                        getCarContext().getCarService(ScreenManager.class).pop();
+                    } catch (Exception e) {
+                        Log.w("CarConnect.Detail", "Screen pop failed", e);
+                    }
+                }
+            }
+        };
+        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
+        
     }
 
     @NonNull
@@ -80,8 +94,7 @@ public class DetailViewScreen extends Screen {
     //  Builders
     // ------------------------------------------------------------------
 
-    private static PaneTemplate buildTemplate(JSONObject payload, CallbackContext cb,
-                                              boolean interceptBack, String title) throws JSONException {
+    private PaneTemplate buildTemplate(JSONObject payload, CallbackContext cb) throws JSONException {
         JSONArray pairsArr = payload.optJSONArray("pairs");
         if (pairsArr == null || pairsArr.length() == 0) {
             throw new JSONException("pairs array missing or empty in showDetailView payload");
@@ -124,7 +137,7 @@ public class DetailViewScreen extends Screen {
         final Action headerAction = Action.BACK;
         Log.d(TAG, "buildTemplate(): pairs=" + (pairsArr != null ? pairsArr.length() : 0)
                 + " buttons=" + (buttonsArr != null ? buttonsArr.length() : 0)
-                + " headerAction=" + (interceptBack ? "BACK" : "APP_ICON"));
+                + " title=\"" + title + "\" headerAction=BACK");
 
         PaneTemplate.Builder tmplBuilder =
             new PaneTemplate.Builder(pane.build())
@@ -161,11 +174,7 @@ public class DetailViewScreen extends Screen {
         try {
             this.callback = newCb;
             parseMeta(newPayload);
-            if (backCallback != null) {
-                backCallback.setEnabled(interceptBack);
-                Log.d(TAG, "update(): backCallback enabled=" + backCallback.isEnabled());
-            }
-            this.template = buildTemplate(newPayload, callback, interceptBack, title);
+            this.template = buildTemplate(newPayload, callback);
             Log.d(TAG, "update(): rebuilt template; title=\"" + title + "\" interceptBack=" + interceptBack);
             invalidate();              // ask framework to fetch new template
         } catch (JSONException e) {
@@ -181,18 +190,6 @@ public class DetailViewScreen extends Screen {
     // ------------------------------------------------------------------
     //  Back dispatcher + metadata + event emission
     // ------------------------------------------------------------------
-    private void installBackDispatcher() {
-        backCallback = new OnBackPressedCallback(interceptBack) {
-            @Override public void handleOnBackPressed() {
-                Log.d(TAG, "onBackPressedDispatcher: callback fired (interceptBack=" + interceptBack + ") screenId=" + screenId);
-                emitInitEvent("screen:back", "nav");
-                // With callback enabled we consume; JS can decide what to do.
-            }
-        };
-        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
-        Log.d(TAG, "Registered back callback; enabled=" + backCallback.isEnabled());
-    }
-
     private void parseMeta(JSONObject payload) {
         this.title = payload.optString("title", this.title);
         this.screenId = payload.optString("screenId", "");

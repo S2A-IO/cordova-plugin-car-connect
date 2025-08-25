@@ -25,14 +25,12 @@
  * 
  * Copyright © 2025 RIKSOF. MIT License.
  */
-
 package io.s2a.connect;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import java.io.InputStream;
 
-import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 
@@ -41,14 +39,13 @@ import androidx.annotation.Nullable;
 import androidx.activity.OnBackPressedCallback;
 import androidx.car.app.CarContext;
 import androidx.car.app.Screen;
+import androidx.car.app.ScreenManager;
 import androidx.car.app.model.Action;
 import androidx.car.app.model.CarIcon;
 import androidx.car.app.model.ItemList;
 import androidx.car.app.model.ListTemplate;
 import androidx.car.app.model.Row;
 import androidx.core.graphics.drawable.IconCompat;
-import androidx.lifecycle.DefaultLifecycleObserver;
-import androidx.lifecycle.LifecycleOwner;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -60,7 +57,6 @@ import org.json.JSONException;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -104,22 +100,25 @@ public class ListViewScreen extends Screen {
         this.callback = cb;
         parseMeta(payload);
         epoch.incrementAndGet();
+        this.template = buildTemplate(ctx, payload, cb);
 
-        Log.d(TAG, "ctor(): screenId=" + screenId + " title=\"" + title + "\" interceptBack=" + interceptBack);
-
-        // Back handling via dispatcher (Car App 1.4+)
-        backCallback = new OnBackPressedCallback(interceptBack) {
+        // Always register an enabled back callback so we get notified even when not intercepting.
+        backCallback = new OnBackPressedCallback(true /* always enabled for signaling */) {
             @Override public void handleOnBackPressed() {
-                Log.d(TAG, "onBackPressedDispatcher: callback fired (interceptBack=" + interceptBack + ") screenId=" + screenId);
-                // Header back pressed → report to init() channel
+                Log.d(TAG, "backCallback(): interceptBack=" + interceptBack + " screenId=" + screenId);
+                // Tell JS about the back event (reason=nav for header/back affordance)
                 emitInitEvent("screen:back", "nav");
-                // Do nothing else; with callback enabled, we consume and JS can decide what to do next.
+                if (!interceptBack) {
+                    // Replicate host default behavior (pop this screen) after notifying JS.
+                    try {
+                        getCarContext().getCarService(ScreenManager.class).pop();
+                    } catch (Exception e) {
+                        Log.w(TAG, "Screen pop failed", e);
+                    }
+                } // else: consume; JS decides when to goBack()
             }
         };
         getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
-        Log.d(TAG, "Registered back callback; enabled=" + backCallback.isEnabled());
-
-        this.template = buildTemplate(ctx, payload, cb);
     }
 
     @NonNull
@@ -168,8 +167,11 @@ public class ListViewScreen extends Screen {
         }
         listBuilder.setNoItemsMessage("No items available");
 
+
+        // Always show a back affordance in the header. Whether we consume it is decided
+        // in the OnBackPressedCallback (interceptBack flag).
         final Action headerAction = Action.BACK;
-        Log.d(TAG, "buildTemplate(): items=" + rows.size() + " headerAction=" + (interceptBack ? "BACK" : "APP_ICON"));
+        Log.d(TAG, "buildTemplate(): items=" + rows.size() + " title=\"" + title + "\" headerAction=BACK");
 
         return new ListTemplate.Builder()
                 .setSingleList(listBuilder.build())
@@ -276,10 +278,10 @@ public class ListViewScreen extends Screen {
             this.callback    = newCb;
             this.payloadJson = newPayload;
             parseMeta(newPayload);
-            if (backCallback != null) {
-                backCallback.setEnabled(interceptBack);
-                Log.d(TAG, "update(): backCallback enabled=" + backCallback.isEnabled());
-            }
+
+            // Keep the back callback ENABLED regardless of interceptBack so we always emit events.
+            if (backCallback != null) Log.d(TAG, "update(): backCallback stays enabled=" + backCallback.isEnabled());
+            
             epoch.incrementAndGet();
             this.template    = buildTemplate(getCarContext(), newPayload, callback);
             Log.d(TAG, "update(): rebuilt template; title=\"" + title + "\" interceptBack=" + interceptBack);
