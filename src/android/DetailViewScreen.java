@@ -53,6 +53,7 @@ public class DetailViewScreen extends Screen {
     // Screen identity & back options (from JS payload)
     private String screenId = "";
     private boolean interceptBack = false;
+    private OnBackPressedCallback backCallback;
 
     public DetailViewScreen(@NonNull CarContext ctx, @NonNull JSONObject payload,
                             @NonNull CallbackContext cb) throws JSONException {
@@ -60,34 +61,25 @@ public class DetailViewScreen extends Screen {
         this.callback = cb;
         parseMeta(payload);
 
-        // Lifecycle-driven appear/disappear events
+        // Lifecycle-driven appear/disappear events; only register a back override if intercepting
         getLifecycle().addObserver(new DefaultLifecycleObserver() {
             @Override public void onStart(@NonNull LifecycleOwner owner) {
                 emitInitEvent("screen:appear", null);
+                if (interceptBack) {
+                    backCallback = new OnBackPressedCallback(true) {
+                        @Override public void handleOnBackPressed() {
+                            // Consume and just notify; JS decides when to pop
+                            emitInitEvent("screen:back", "nav");
+                        }
+                    };
+                    getCarContext().getOnBackPressedDispatcher().addCallback(DetailViewScreen.this, backCallback);
+                }
             }
             @Override public void onStop(@NonNull LifecycleOwner owner) {
                 emitInitEvent("screen:disappear", null);
+                if (backCallback != null) { backCallback.remove(); backCallback = null; }
             }
         });
-        // Register back handler via CarContext's dispatcher (Car App 1.4.0+)
-        OnBackPressedCallback backCallback = new OnBackPressedCallback(true) {
-            @Override public void handleOnBackPressed() {
-                // Single pipeline for header/hardware back in the host
-                emitInitEvent("screen:back", "nav");
-                if (interceptBack) {
-                    // consume; JS will decide when to pop via goBack()/closeScreen()
-                    return;
-                }
-                // pass through to default behavior (pop current screen)
-                setEnabled(false);
-                try {
-                    getCarContext().getOnBackPressedDispatcher().onBackPressed();
-                } finally {
-                    setEnabled(true);
-                }
-            }
-        };
-        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
 
         this.template = buildTemplate(payload, cb);
     }

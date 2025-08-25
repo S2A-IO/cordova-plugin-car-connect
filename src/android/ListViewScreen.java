@@ -83,6 +83,7 @@ public class ListViewScreen extends Screen {
     private String screenId = "";
     private boolean interceptBack = false;
     private String title = "Select an item";
+    private OnBackPressedCallback backCallback;
 
     // One CarIcon per image URL – survives template rebuilds
     private final Map<String, CarIcon> iconCache = new HashMap<>();
@@ -104,38 +105,25 @@ public class ListViewScreen extends Screen {
         parseMeta(payload);
         epoch.incrementAndGet();
 
-        // Lifecycle-aware appear/disappear events
+        // Lifecycle-aware appear/disappear; only register a back override if intercepting
         getLifecycle().addObserver(new DefaultLifecycleObserver() {
-            @Override
-            public void onStart(@NonNull LifecycleOwner owner) {
+            @Override public void onStart(@NonNull LifecycleOwner owner) {
                 emitInitEvent("screen:appear", null);
+                if (interceptBack) {
+                    backCallback = new OnBackPressedCallback(true) {
+                        @Override public void handleOnBackPressed() {
+                            // Consume and just notify; JS decides when to pop
+                            emitInitEvent("screen:back", "nav");
+                        }
+                    };
+                    getCarContext().getOnBackPressedDispatcher().addCallback(ListViewScreen.this, backCallback);
+                }
             }
-            @Override
-            public void onStop(@NonNull LifecycleOwner owner) {
+            @Override public void onStop(@NonNull LifecycleOwner owner) {
                 emitInitEvent("screen:disappear", null);
+                if (backCallback != null) { backCallback.remove(); backCallback = null; }
             }
         });
-
-        // Register back handler via CarContext's dispatcher (Car App 1.4.0)
-        OnBackPressedCallback backCallback = new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                // Single pipeline for header/hardware back in the host
-                emitInitEvent("screen:back", "nav");
-                if (interceptBack) {
-                    // consume; app JS decides when to pop via goBack()
-                    return;
-                }
-                // pass through to default behavior (pop current screen)
-                setEnabled(false);
-                try {
-                    getCarContext().getOnBackPressedDispatcher().onBackPressed();
-                } finally {
-                    setEnabled(true);
-                }
-            }
-        };
-        getCarContext().getOnBackPressedDispatcher().addCallback(this, backCallback);
 
         this.template = buildTemplate(ctx, payload, cb);
     }
