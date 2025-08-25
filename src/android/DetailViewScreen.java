@@ -121,7 +121,7 @@ public class DetailViewScreen extends Screen {
             pane.addAction(primary);             // put primary in the Pane
         }
 
-        Action headerAction = interceptBack ? Action.BACK : Action.APP_ICON;
+        final Action headerAction = Action.BACK;
         Log.d(TAG, "buildTemplate(): pairs=" + (pairsArr != null ? pairsArr.length() : 0)
                 + " buttons=" + (buttonsArr != null ? buttonsArr.length() : 0)
                 + " headerAction=" + (interceptBack ? "BACK" : "APP_ICON"));

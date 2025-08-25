@@ -168,7 +168,7 @@ public class ListViewScreen extends Screen {
         }
         listBuilder.setNoItemsMessage("No items available");
 
-        Action headerAction = interceptBack ? Action.BACK : Action.APP_ICON;
+        final Action headerAction = Action.BACK;
         Log.d(TAG, "buildTemplate(): items=" + rows.size() + " headerAction=" + (interceptBack ? "BACK" : "APP_ICON"));
 
         return new ListTemplate.Builder()
