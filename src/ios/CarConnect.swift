@@ -129,6 +129,15 @@ class CarConnect: CDVPlugin {
         commandDelegate.send(res, callbackId: cmd.callbackId)
     }
 
+    @objc(closeScreen:)
+    private func closeScreen(_ cmd: CDVInvokedUrlCommand) {
+        let payload = cmd.arguments.first as? [String: Any] ?? [:]
+        CarConnectService.shared.closeScreen(payload: payload)
+
+        let res = CDVPluginResult(status: .ok)
+        commandDelegate.send(res, callbackId: cmd.callbackId)
+    }
+
     // ------------------------------------------------------------
     // Helper to keep callback channel open
     // ------------------------------------------------------------
@@ -173,8 +182,15 @@ class CarConnect: CDVPlugin {
         }
     }
 
-    static func closeListCallback()   { shared?.closeCallback(&shared!.listCallbackId) }
-    static func closeDetailCallback() { shared?.closeCallback(&shared!.detailCallbackId) }
+    static func closeListCallback() {
+        guard let plugin = shared else { return }
+        plugin.closeCallback(&plugin.listCallbackId)
+    }
+
+    static func closeDetailCallback() {
+        guard let plugin = shared else { return }
+        plugin.closeCallback(&plugin.detailCallbackId)
+    }
 
     // ------------------------------------------------------------
     // Native → JS emitters (called from CarConnectService)
@@ -204,6 +220,17 @@ class CarConnect: CDVPlugin {
         res?.setKeepCallbackAs(true)
         plugin.commandDelegate.send(res, callbackId: cbID)
     }
+
+    static func emitEvent(_ event: [String: Any]) {
+        guard
+            let plugin = CarConnect.shared,
+            let cbID = plugin.initCallbackId
+        else { return }
+
+        let res = CDVPluginResult(status: .ok, messageAs: event)
+        res?.setKeepCallbackAs(true)
+        plugin.commandDelegate.send(res, callbackId: cbID)
+    }
 }
 
 // ------------------------------------------------------------
@@ -213,5 +240,3 @@ extension Notification.Name {
     static let carConnectShowListView   = Notification.Name("CarConnectShowListView")
     static let carConnectShowDetailView = Notification.Name("CarConnectShowDetailView")
 }
-
-

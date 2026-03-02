@@ -49,6 +49,12 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
     private var startupTitle: String?
     private var startupMessage: String?
 
+    // Screen identity & back interception
+    private var listScreenId: String?
+    private var detailScreenId: String?
+    private var listInterceptBack = false
+    private var detailInterceptBack = false
+
     /** 
      * Update the placeholder strings shown on the root template.
      * – If only the **message** changes → mutate the existing row in place.
@@ -155,6 +161,13 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
 
         let listTitle = payload["title"] as? String ?? "Select an item"
 
+        listScreenId = payload["screenId"] as? String
+        if let back = payload["back"] as? [String: Any] {
+            listInterceptBack = back["intercept"] as? Bool ?? false
+        } else {
+            listInterceptBack = false
+        }
+
         // Build the section
         let section = CPListSection(items: items.map { item in
             let li = CPListItem(
@@ -235,6 +248,13 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
                           detail: $0["value"] as? String ?? "")
         }
 
+        detailScreenId = payload["screenId"] as? String
+        if let back = payload["back"] as? [String: Any] {
+            detailInterceptBack = back["intercept"] as? Bool ?? false
+        } else {
+            detailInterceptBack = false
+        }
+
         let actions = buttons.prefix(2).map { b -> CPTextButton in
             let style: CPTextButtonStyle =
                 (b["type"] as? String)?.lowercased() == "primary" ? .confirm : .normal
@@ -282,17 +302,83 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         iface.popTemplate(animated: true, completion: nil)
     }
 
+    func closeScreen(payload: [String: Any]) {
+        guard let iface = interfaceController else { return }
+        guard let targetId = payload["screenId"] as? String, !targetId.isEmpty else { return }
+        guard let top = iface.topTemplate else { return }
+
+        // Only allow closing detail screens
+        if let detailTpl = detailTemplateRef,
+        top === detailTpl,
+        detailScreenId == targetId {
+
+            iface.popTemplate(animated: true, completion: nil)
+            return
+        }
+
+        // Intentionally ignore list screens and placeholder
+    }
+
     // MARK: - CPInterfaceControllerDelegate -------------------------------
     func interfaceController(_ interfaceController: CPInterfaceController,
                          didPop template: CPTemplate,
                          animated: Bool) {
 
-        if template is CPListTemplate {
+        // --- LIST POPPED ---
+        if let listTpl = listTemplateRef, template === listTpl {
+
+            if listInterceptBack, let id = listScreenId {
+                CarConnect.emitEvent([
+                    "type": "screen:back",
+                    "screenId": id,
+                    "reason": "nav"
+                ])
+
+                // Re-push to simulate intercept
+                interfaceController.pushTemplate(listTpl, animated: false)
+                return
+            }
+
+            if let id = listScreenId {
+                CarConnect.emitEvent([
+                    "type": "screen:disappear",
+                    "screenId": id
+                ])
+            }
+
             CarConnect.closeListCallback()
             listTemplateRef = nil
-        } else if template is CPInformationTemplate {
+            listScreenId = nil
+            listInterceptBack = false
+            return
+        }
+
+        // --- DETAIL POPPED ---
+        if let detailTpl = detailTemplateRef, template === detailTpl {
+
+            if detailInterceptBack, let id = detailScreenId {
+                CarConnect.emitEvent([
+                    "type": "screen:back",
+                    "screenId": id,
+                    "reason": "nav"
+                ])
+
+                interfaceController.pushTemplate(detailTpl, animated: false)
+                return
+            }
+
+            if let id = detailScreenId {
+                CarConnect.emitEvent([
+                    "type": "screen:disappear",
+                    "screenId": id
+                ])
+            }
+
             CarConnect.closeDetailCallback()
             detailTemplateRef = nil
+            detailScreenId = nil
+            detailInterceptBack = false
+            return
         }
     }
 
@@ -318,7 +404,9 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         if let root = iface.templates.first, root is T, iface.topTemplate !== root {
             //runTemplateOp {
                 iface.pop(to: root, animated: true) { [weak self] _, _ in
-                    self?.templateOpDidFinish()
+                    guard let self else { return }
+                    self.emitAppearIfNeeded(for: root)
+                    self.templateOpDidFinish()
                 }
             //}
             return
@@ -333,7 +421,9 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
             // Otherwise just pop back to it (brings it to top)
         //runTemplateOp {
             iface.pop(to: tpl, animated: true) { [weak self] _, _ in
-                self?.templateOpDidFinish()
+                guard let self else { return }
+                self.emitAppearIfNeeded(for: tpl)
+                self.templateOpDidFinish()
             }
         //}
             return
@@ -344,15 +434,19 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         if iface.topTemplate === placeholderTemplateRef {
             // Root is the placeholder → swap it for the new screen
             placeholderTemplateRef = nil             // placeholder no longer visible
-            iface.setRootTemplate(newTemplate,
-                          animated: true) { [weak self] _, _ in
-                self?.templateOpDidFinish()
+            iface.setRootTemplate(newTemplate, animated: true) { [weak self] _, _ in
+                guard let self else { return }
+                self.emitAppearIfNeeded(for: newTemplate)
+                self.templateOpDidFinish()
             }
         } else {
             // Normal case: push on top of whatever is showing
             iface.pushTemplate(newTemplate,
-                       animated: true) { [weak self] _, _ in
-                self?.templateOpDidFinish()
+                animated: true) { [weak self] _, _ in
+                guard let self else { return }
+
+                self.emitAppearIfNeeded(for: newTemplate)
+                self.templateOpDidFinish()
             }
         }
     //}
@@ -380,11 +474,27 @@ class CarConnectService: NSObject, CPInterfaceControllerDelegate {
         }
     }
 
+    private func emitAppearIfNeeded(for template: CPTemplate) {
+        if let listTpl = listTemplateRef, template === listTpl, let id = listScreenId {
+            CarConnect.emitEvent([
+                "type": "screen:appear",
+                "screenId": id
+            ])
+            return
+        }
+
+        if let detailTpl = detailTemplateRef, template === detailTpl, let id = detailScreenId {
+            CarConnect.emitEvent([
+                "type": "screen:appear",
+                "screenId": id
+            ])
+            return
+        }
+    }
+
     // MARK: - Helper to rebuild the single-row placeholder section ----------
     private func buildPlaceholderSection(message: String?) -> CPListSection {
         let row = CPListItem(text: message ?? "", detailText: nil)
         return CPListSection(items: [row])
     }
 }
-
-

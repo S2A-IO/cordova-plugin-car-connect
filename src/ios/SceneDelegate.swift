@@ -37,6 +37,3 @@ extension SceneDelegate {
         self.interfaceController = nil
     }
 }
-
-
-
